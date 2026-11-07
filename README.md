@@ -5,14 +5,16 @@
 ## Hồ sơ nhanh
 
 - **Mã dự án:** QLNT
-- **Mục tiêu sản phẩm:** Quản lý phòng trọ và khách trọ (chi tiết: Cần xác nhận)
-- **Chủ dự án / người quyết định:** Người dùng (chủ workspace); người phụ trách mảng A/B/C: Cần xác nhận
-- **Phạm vi vòng đời hiện tại:** Khởi tạo
-- **Nhóm loại hình:** Web + app mobile, giao diện 2.5D dạng game (công nghệ: mảng B đánh giá)
+- **Mục tiêu sản phẩm:** Quản lý phòng trọ và khách trọ mang lại trải nghiệm như chơi game; người thuê tìm phòng trên bản đồ khu phố ảo
+- **Chủ dự án / người quyết định:** Người dùng (chủ workspace, thẩm quyền cao nhất); Phụ trách mảng A/B/C: Agent đề xuất, Người dùng phê duyệt
+- **Phạm vi vòng đời hiện tại:** Khởi tạo (hoàn thành cổng Brief, chuyển sang Thiết kế kỹ thuật)
+- **Mô hình kiến trúc:** SaaS Multi-tenant (nền tảng chung cho nhiều chủ trọ, chia sẻ bản đồ khu phố, phân tách dữ liệu)
+- **Nhóm loại hình:** Web responsive + App mobile (đóng gói Capacitor từ 1 codebase)
+- **Chiến lược đồ họa:** Giai đoạn 1 (P1 MVP) dùng 2D phẳng/isometric sprite đơn giản; Giai đoạn 2 nâng cấp lên 2.5D/3D (Three.js/WebGL); kiến trúc Headless tách lớp giúp đổi đồ họa dễ dàng
 - **Thị trường đầu tiên:** Hà Nội — nhà trọ cho sinh viên, người đi làm
-- **Môi trường triển khai:** Cần xác nhận
-- **Repository Git:** `TEAM_ORCA/4.Du_an/QLNT` (Git riêng, nhánh `main`, chưa có remote)
-- **Trạng thái:** Khởi tạo — chưa qua cổng Brief
+- **Môi trường triển khai:** Local Dev → Cloud Staging/Production
+- **Repository Git:** `TEAM_ORCA/4.Du_an/QLNT` (Git riêng, nhánh `main`)
+- **Trạng thái:** Đã qua cổng Brief → Chuẩn bị thiết kế kỹ thuật và kiến trúc mã nguồn
 
 ## Cách dùng khung
 

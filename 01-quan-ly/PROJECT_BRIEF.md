@@ -4,11 +4,16 @@
 - **Mục tiêu và vấn đề cần giải quyết:** Quản lý nhà trọ và khách trọ **với trải nghiệm như đang chơi game hơn là đang quản lý thật**; người thuê tìm trọ trong thế giới game. Chỉ số thành công: Cần xác nhận
 - **Người dùng/đối tượng sử dụng:** Quản trị hệ thống, chủ nhà trọ, khách trọ (người thuê), sale trọ (chủ nhà tạo tài khoản, avatar tham quan phòng trống có thời hạn)
 - **Thị trường đầu tiên:** Nhà trọ cho sinh viên và người đi làm tại Hà Nội
-- **Chủ dự án:** Người dùng (chủ workspace)
-- **Người phụ trách mảng:** A. Thiết kế nghiệp vụ: Cần xác nhận / B. Xây dựng dự án: Cần xác nhận / C. Quản lý vận hành: Cần xác nhận
-- **Đội ngũ đi kèm từng mảng:** Cần xác nhận
-- **Vòng đời/phạm vi đang thực hiện:** Khởi tạo
-- **Loại hình và môi trường triển khai:** Web + app mobile (mức cơ bản), giao diện 2.5D dạng game; công nghệ và môi trường do mảng B đánh giá
+- **Chủ dự án:** Người dùng (chủ workspace, thẩm quyền phê duyệt cao nhất)
+- **Người phụ trách mảng (tạm thời giai đoạn Khởi tạo):** Agent đề xuất kỹ thuật (Mảng B), chuẩn hóa nghiệp vụ (Mảng A) và lập kế hoạch vận hành (Mảng C); Người dùng xem xét và phê duyệt.
+- **Đội ngũ đi kèm từng mảng:** Agent hỗ trợ thực thi theo từng vai trò subagent
+- **Vòng đời/phạm vi đang thực hiện:** Khởi tạo (hoàn tất cổng Brief, chuyển sang Thiết kế kỹ thuật)
+- **Mô hình triển khai:** SaaS Multi-tenant (nền tảng chung cho nhiều chủ nhà trọ độc lập, dùng chung bản đồ khu phố; dữ liệu phân tách theo từng chủ trọ)
+- **Chiến lược đồ họa & công nghệ:** Mô hình 2 giai đoạn:
+  - *Giai đoạn 1 (P1 MVP):* 2D / isometric phẳng, sprite và hoạt ảnh đơn giản, ưu tiên thể hiện trọn vẹn nghiệp vụ/chức năng, chạy nhẹ và mượt trên mọi thiết bị.
+  - *Giai đoạn 2 (P2-P3):* Nâng cấp lên 2.5D / 3D (Three.js / WebGL).
+  - *Kiến trúc:* Tách biệt hoàn toàn tầng Dữ liệu/Nghiệp vụ (Headless Core) với tầng Hiển thị (Renderer Adapter) để chuyển đổi và nâng cấp đồ họa dễ dàng.
+- **Client:** Web responsive + App mobile (đóng gói bằng Capacitor/PWA từ 1 codebase)
 - **Git repository:** `TEAM_ORCA/4.Du_an/QLNT` (nhánh `main`)
 - **Ngày cập nhật:** 2026-11-07
 

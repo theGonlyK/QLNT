@@ -61,7 +61,7 @@ Trạng thái chung: `Dự thảo` — tổng hợp từ trao đổi với ngư�
 | Thiết bị phòng trọ, cảnh báo hỏng (chấm than đỏ), lịch sử sửa chữa và minigame bắt chuột gián bằng nồi chảo chổi dép. | Nghiệp vụ thiết bị & giải trí | Người dùng | **Đã chốt** (2026-11-06, đưa vào P1) |
 | Sử dụng điểm thưởng: đổi quà trang trí, skin thiết bị/avatar/vũ khí, voucher giảm giá, mua sao tặng chủ nhà tích lũy uy tín. | Gamification Economy | Người dùng | **Đã chốt** (2026-11-07) |
 | Đồng ý NT-05 (không chấm điểm tiêu cực cá nhân) và NT-06 (bản đồ chỉ hiện phòng trống)? | Quyền riêng tư | Người dùng | **Đã đồng ý** (2026-11-07) |
-| Một hệ thống cho nhiều chủ trọ (SaaS)? (Hướng game + bản đồ chung ngầm định là có) | Kiến trúc dữ liệu | Người dùng | Chờ trả lời |
-| Công nghệ web/app mobile, offline/online, render 2.5D, kết nối thiết bị | Kiến trúc, chi phí | Mảng B | Chờ đánh giá |
-| Chỉ số thành công và mốc thời gian | Cổng Brief | Người dùng | Chờ trả lời |
-| Người phụ trách mảng A/B/C và đội ngũ đi kèm | Thẩm quyền, cổng duyệt | Người dùng | Chờ trả lời |
+| Một hệ thống cho nhiều chủ trọ (SaaS)? (Hướng game + bản đồ chung ngầm định là có) | Kiến trúc dữ liệu | Người dùng | **Đã xác nhận** (2026-11-07) |
+| Công nghệ web/app mobile, offline/online, đồ họa 2D -> 2.5D/3D | Kiến trúc, chi phí | Mảng B | **Đã đề xuất chiến lược 2 giai đoạn** (2026-11-07, xem `TECH_PROFILE.md`) |
+| Người phụ trách mảng A/B/C và đội ngũ đi kèm | Thẩm quyền, cổng duyệt | Người dùng | **Agent đề xuất, Người dùng phê duyệt** (2026-11-07) |
+| Chỉ số thành công và mốc thời gian | Cổng Brief | Người dùng | Chờ xác định theo tiến độ MVP |
