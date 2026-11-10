@@ -95,7 +95,7 @@ graph TD
 | **5. Cán bộ Điện/Nước (`Utility Officer`)** | Con người | Nhân viên ngành điện lực hoặc cấp thoát nước địa phương. Tương tác tức thì qua việc quét mã QR gắn tại tủ công tơ để nhập số điện/nước hàng tháng mà không cần tài khoản thường trực. |
 | **6. Cảnh sát khu vực (`Local Police`)** | Con người | Công an khu vực, cán bộ kiểm tra PCCC. Tương tác qua quét mã QR an ninh tại cổng nhà trọ (kèm mã công tác bảo mật) để tra cứu danh sách nhân khẩu thực tế phục vụ rà soát tạm trú/VNeID, kiểm tra an toàn PCCC và đăng thông báo an ninh. |
 | **7. Quản trị hệ thống (`System Admin`)** | Con người | Đội ngũ quản trị nền tảng SaaS QLNT. Quản lý tài khoản các chủ nhà trọ, kiểm duyệt tin đăng trên bản đồ khu phố, xử lý phản ánh gian lận và cấu hình toàn sàn. |
-| **8. Bộ diễn hoạt Game (`Game Renderer`)** | Hệ thống | Engine đồ họa (2D Canvas ở P1 / Three.js ở P2) chịu trách nhiệm diễn hoạt mọi hành động (gõ cửa, giao tiền, nhặt dép bắt chuột, đập phá, bật tắt chấm than đỏ/vàng) theo sự kiện từ tầng Core. |
+| **8. Bộ diễn hoạt Game (`Game Renderer`)** | Hệ thống | Renderer 3D camera isometric cố định từ P1; ban đầu có thể dùng hình khối và sprite/plane 2D, sau đó thay dần bằng object 3D. Diễn hoạt hành động theo sự kiện từ tầng Core. |
 | **9. Bộ lập lịch tự động (`System Scheduler`)** | Hệ thống | Tiến trình chạy ngầm định kỳ kích hoạt chu kỳ thu tiền hàng tháng, tính toán hạn nộp, trừ điểm trễ hạn và gửi thông báo nhắc nợ. |
 
 ---
@@ -114,7 +114,7 @@ graph TD
 
 ### Phân hệ F03: Quản lý Thiết bị & Báo hỏng
 - **F03.1 — Bàn giao Danh mục Thiết bị:** Thiết lập thiết bị mặc định (cố định) và tiện nghi bổ sung (tủ lạnh, giường, tủ, máy lạnh...) trong biên bản bàn giao phòng.
-- **F03.2 — Báo hỏng & Bật Chấm than Đỏ (`R-18`, `NT-08`):** Khách/chủ báo hỏng thiết bị, hệ thống lập tức gắn icon **chấm than đỏ** nhấp nháy trên thiết bị đó trong không gian 2D phòng trọ.
+- **F03.2 — Báo hỏng & Bật Chấm than Đỏ (`R-18`, `NT-08`):** Khách/chủ báo hỏng thiết bị, hệ thống lập tức gắn icon **chấm than đỏ** nhấp nháy trên thiết bị đó trong cảnh 3D; P1 có thể dùng icon dạng sprite/plane 2D.
 - **F03.3 — Nghiệm thu Sửa chữa & Tắt Chấm than Đỏ:** Chủ nhà bấm xác nhận đã sửa xong → Chấm than đỏ biến mất, tự động ghi nhật ký sửa chữa và chi phí.
 - **F03.4 — Tùy biến Vị trí & Skin Đồ đạc:** Cho phép khách trọ sắp xếp lại vị trí giường/tủ hoặc đổi skin hiển thị đồ vật nhưng không được làm thiếu số lượng tài sản.
 

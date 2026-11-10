@@ -8,6 +8,7 @@
 | Phiên bản | Ngày | Người thực hiện | Vai trò | Tóm tắt nội dung điều chỉnh | Trạng thái |
 |---|---|---|---|---|---|
 | **1.0** | 2026-11-07 | Agent BA | Senior BA | Khởi tạo tài liệu BRD chính thức sau khi hoàn thành cổng Brief:<br>- Xác định tầm nhìn, bài toán kinh doanh và thị trường mục tiêu Hà Nội.<br>- Định nghĩa rõ các nền tảng triển khai (Web responsive, Mobile app qua Capacitor, Web-app tức thì qua QR, SaaS Multi-tenant).<br>- Bổ sung đầy đủ 6 phân khúc người dùng (Chủ trọ, Khách trọ, Sale trọ, Khách vãng lai tìm phòng, Cán bộ điện/nước, Công an khu vực).<br>- Chuẩn hóa các quy tắc nghiệp vụ cốt lõi, cơ chế gamification, lộ trình 3 giai đoạn (P1/P2/P3) và chỉ số đo lường thành công. | Đã duyệt |
+| **1.1** | 2026-11-09 | PM | Điều phối | Làm rõ đích đồ họa 3D camera isometric cố định và lộ trình tăng dần từ prototype hình khối đến asset 3D. | Đã duyệt định hướng |
 
 ---
 
@@ -17,7 +18,7 @@
 - **Tầm nhìn sản phẩm (Vision):** Xây dựng một nền tảng quản lý nhà trọ độc đáo, **mang lại trải nghiệm như đang chơi game mô phỏng quản lý (Simulation Game) hơn là một phần mềm quản trị khô khan**. 
   - Chủ nhà ngồi tại "Phòng quản lý ảo" để vận hành toàn bộ cơ sở phòng trọ, theo dõi sự cố và duyệt thanh toán.
   - Khách trọ tương tác qua avatar, thực hiện các việc cần làm (đóng tiền, báo hỏng, giữ gìn vệ sinh) như các "nhiệm vụ game" để tích lũy điểm thưởng.
-  - Người tìm trọ khám phá các phòng trống thông qua việc dạo chơi trên bản đồ khu phố ảo 2D/2.5D.
+  - Người tìm trọ khám phá các phòng trống thông qua bản đồ khu phố ảo hướng tới 3D camera isometric cố định; giai đoạn đầu có thể dùng placeholder 2D trong cảnh 3D.
 - **Thị trường mục tiêu ban đầu:** Thành phố Hà Nội (tập trung vào các khu vực tập trung đông sinh viên và người đi làm trẻ tuổi: Cầu Giấy, Đống Đa, Thanh Xuân, Hai Bà Trưng, Nam/Bắc Từ Liêm).
 - **Nguyên tắc thiết kế tối thượng:** *"Game ở bề mặt, dữ liệu thật ở bên trong"* — Lớp game giúp trực quan hóa và tạo cảm xúc tương tác thú vị, nhưng dữ liệu pháp lý và tài chính luôn bảo toàn tính chính xác và an toàn tuyệt đối.
 
@@ -93,7 +94,7 @@ Hệ thống được thiết kế đa nền tảng linh hoạt, tiếp cận đ
 Hệ thống áp dụng mô hình **Freemium** linh hoạt:
 1. **Gói Miễn phí (Free Tier):**
    - Phù hợp với chủ trọ quy mô nhỏ (≤ 10-15 phòng).
-   - Sử dụng đầy đủ trải nghiệm game 2D, quản lý thiết bị, quy trình nộp tiền thủ công qua ảnh chụp bill và tính điểm thưởng.
+   - Sử dụng trải nghiệm game 3D camera cố định ở mức asset phù hợp MVP (có thể dùng hình khối/sprite tạm), quản lý thiết bị, quy trình nộp tiền thủ công qua ảnh chụp bill và tính điểm thưởng.
    - Dữ liệu chạy offline hoặc lưu trữ đám mây cơ bản.
 2. **Gói Trả phí (Pro/Premium Tier):**
    - Tự động hóa hoàn toàn: Đối soát thanh toán tự động qua VietQR động liên kết ngân hàng (tiền về tự khớp lệnh, không cần chủ nhà kiểm tra tài khoản).
@@ -109,23 +110,23 @@ Hệ thống áp dụng mô hình **Freemium** linh hoạt:
 ## 8. Lộ trình phát triển sản phẩm (Phased Roadmap)
 
 ```
-[ P1: MVP Cốt lõi & Đồ họa 2D ] ---> [ P2: Kết nối Người thuê, Sale & Bản đồ ] ---> [ P3: Tự động hóa & IoT ]
+[ P1: MVP — 3D hình khối ] ---> [ P2: Mở rộng cảnh & thay asset ] ---> [ P3: Hoàn thiện 3D, tự động hóa & IoT ]
 ```
 
 - **P1 — Bản thử cảm giác game & Nghiệp vụ cơ bản (Hiện tại):**
-  - Dựng tòa nhà dạng 2D phẳng / isometric tilemap đơn giản.
+  - Dựng cảnh 3D camera isometric cố định bằng hình khối đơn giản; có thể dùng sprite/plane 2D cho avatar và asset tạm.
   - Avatar cư dân, thẻ nhân vật, quản lý phòng và thiết bị.
   - Báo hỏng thiết bị (chấm than đỏ) và nhật ký lịch sử.
   - Luồng đóng tiền thủ công: Avatar chủ gõ cửa, chấm than vàng, nộp bill ảnh, avatar đi trả tiền, chủ duyệt tiền.
   - Hệ sinh thái điểm thưởng (đổi quà, skin, vũ khí, voucher, sao uy tín) và minigame săn chuột/gián, xả giận.
   - Thử nghiệm với 5–10 chủ nhà trọ tại Hà Nội.
 - **P2 — Kết nối người thuê & Mở rộng cộng tác:**
-  - Bản đồ khu phố Hà Nội 2.5D hiển thị phòng trống và sao uy tín chủ nhà.
+  - Mở rộng bản đồ/khu vực 3D camera cố định ở phạm vi cần thiết, hiển thị phòng trống và sao uy tín chủ nhà; thay dần placeholder bằng asset 3D.
   - Phân quyền vai trò Sale trọ xem phòng trống có thời hạn và gắn bài đăng.
   - Cổng QR Web-app cho Cán bộ điện/nước nhập số và Công an khu vực kiểm tra an ninh.
   - Khách vãng lai xem phòng và luồng chuyển trọ tự động.
-- **P3 — Trả phí, Tự động hóa & Nâng cấp 3D:**
-  - Nâng cấp đồ họa lên 2.5D/3D (Three.js / WebGL) qua interface `IGameRenderer` đã chuẩn hóa.
+- **P3 — Trả phí, Tự động hóa & Hoàn thiện 3D:**
+  - Hoàn thiện có chọn lọc model, vật liệu, ánh sáng và animation trong thế giới 3D camera cố định; không đổi camera tự do hoặc nâng cấp toàn bộ cảnh nếu chưa chứng minh giá trị.
   - Tích hợp đối soát thanh toán tự động qua ngân hàng.
   - Kết nối cảm biến IoT (báo cháy, khóa thông minh).
 

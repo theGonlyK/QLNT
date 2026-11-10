@@ -15,9 +15,9 @@
 
 | Mã UC | Tên Use Case | Actor chính | Actor phụ / Hệ thống | Ưu tiên |
 |---|---|---|---|---|
-| **Phân hệ 1: Quản lý Không gian & Tòa nhà 2D (`UC-BLD`)** | | | | |
-| `UC-BLD-01` | Cấu hình sơ đồ tòa nhà & phòng trọ | Chủ nhà | Canvas Renderer | P1 |
-| `UC-BLD-02` | Xem tổng quan "Phòng quản lý ảo" | Chủ nhà | Canvas Renderer | P1 |
+| **Phân hệ 1: Quản lý Không gian & Tòa nhà 3D (`UC-BLD`)** | | | | |
+| `UC-BLD-01` | Cấu hình không gian tòa nhà & phòng trọ | Chủ nhà | Renderer 3D camera cố định | P1 |
+| `UC-BLD-02` | Xem tổng quan "Phòng quản lý ảo" | Chủ nhà | Renderer 3D camera cố định | P1 |
 | `UC-BLD-03` | Chuyển đổi giao diện Game ↔ Bảng danh sách | Chủ nhà, Khách | Presentation Adapter | P1 |
 | **Phân hệ 2: Khách trọ & Thẻ nhân vật (`UC-TNT`)** | | | | |
 | `UC-TNT-01` | Tiếp nhận khách mới & Sinh avatar phòng | Chủ nhà | Khách trọ | P1 |
@@ -25,9 +25,9 @@
 | `UC-TNT-03` | Trả phòng & Lưu trữ hồ sơ lịch sử | Chủ nhà | Khách trọ | P1 |
 | **Phân hệ 3: Thiết bị & Báo hỏng (`UC-DEV`)** | | | | |
 | `UC-DEV-01` | Quản lý danh mục thiết bị bàn giao phòng | Chủ nhà | Khách trọ | P1 |
-| `UC-DEV-02` | Khách/Chủ báo hỏng thiết bị (Bật chấm than đỏ) | Khách trọ, Chủ | Canvas Renderer | P1 |
+| `UC-DEV-02` | Khách/Chủ báo hỏng thiết bị (Bật chấm than đỏ) | Khách trọ, Chủ | Renderer 3D camera cố định | P1 |
 | `UC-DEV-03` | Chủ nhà xác nhận hoàn tất sửa chữa (Tắt chấm than đỏ) | Chủ nhà | Khách trọ, Renderer | P1 |
-| `UC-DEV-04` | Khách trọ tùy biến vị trí & skin đồ vật | Khách trọ | Canvas Renderer | P1 |
+| `UC-DEV-04` | Khách trọ tùy biến vị trí & skin đồ vật | Khách trọ | Renderer 3D camera cố định | P1 |
 | **Phân hệ 4: Luồng đóng tiền trọ & Duyệt bill (`UC-PAY`)** | | | | |
 | `UC-PAY-01` | Kích hoạt kỳ thu tiền & Avatar gõ cửa (Bật chấm than vàng) | Hệ thống (Cron) | Chủ nhà, Khách, Renderer | P1 |
 | `UC-PAY-02` | Khách nộp bill ảnh chuyển khoản & Avatar đi giao tiền | Khách trọ | Chủ nhà, Renderer | P1 |
@@ -37,15 +37,15 @@
 | `UC-GAM-01` | Hệ thống tự động tính thưởng/trừ điểm hạn nộp tiền | Hệ thống | Khách trọ | P1 |
 | `UC-GAM-02` | Đổi quà, skin avatar/vũ khí, voucher từ Shop điểm | Khách trọ | Chủ nhà (duyệt voucher) | P1 |
 | `UC-GAM-03` | Mua "Sao uy tín" tặng chủ nhà trọ | Khách trọ | Chủ nhà, Bản đồ | P1 |
-| `UC-GAM-04` | Chơi minigame săn chuột, gián bằng vật dụng gia đình | Khách trọ, Chủ | Canvas Renderer | P1 |
-| `UC-GAM-05` | Chế độ xả giận đập phá & NPC lao công dọn dẹp | Khách trọ, Chủ | Canvas Renderer | P1 |
+| `UC-GAM-04` | Chơi minigame săn chuột, gián bằng vật dụng gia đình | Khách trọ, Chủ | Renderer 3D camera cố định | P1 |
+| `UC-GAM-05` | Chế độ xả giận đập phá & NPC lao công dọn dẹp | Khách trọ, Chủ | Renderer 3D camera cố định | P1 |
 | **Phân hệ 6: Mạng lưới Sale trọ nội bộ (`UC-SAL`)** | | | | |
 | `UC-SAL-01` | Tạo tài khoản & Cấp thời hạn cho Sale trọ | Chủ nhà | Sale trọ | P2 |
-| `UC-SAL-02` | Avatar Sale tham quan khuôn viên & Xem dữ liệu phòng trống | Sale trọ | Canvas Renderer | P2 |
+| `UC-SAL-02` | Avatar Sale tham quan khuôn viên & Xem dữ liệu phòng trống | Sale trọ | Renderer 3D camera cố định | P2 |
 | `UC-SAL-03` | Sale gắn bài đăng quảng bá vào phòng trống | Sale trọ | Chủ nhà | P2 |
 | **Phân hệ 7: Khách vãng lai & Bản đồ khu phố ảo (`UC-GST`)** | | | | |
 | `UC-GST-01` | Khách vãng lai xem phòng trống & Đặt lịch hẹn | Khách vãng lai | Chủ nhà, Sale | P2 |
-| `UC-GST-02` | Dạo chơi & Lọc phòng trên Bản đồ khu phố Hà Nội | Khách vãng lai | Canvas Renderer | P2 |
+| `UC-GST-02` | Dạo chơi & Lọc phòng trên Bản đồ khu phố Hà Nội | Khách vãng lai | Renderer 3D camera cố định | P2 |
 | **Phân hệ 8: Cổng dịch vụ công & Tiện ích QR (`UC-PUB`)** | | | | |
 | `UC-PUB-01` | Cán bộ quét QR tủ điện/nước nhập chỉ số công tơ | Cán bộ Điện/Nước | Chủ nhà, Khách trọ | P2 |
 | `UC-PUB-02` | Công an khu vực quét QR tra cứu an ninh & Đăng thông báo | Công an khu vực | Chủ nhà, Cư dân trọ | P2 |

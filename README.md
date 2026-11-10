@@ -10,7 +10,7 @@
 - **Phạm vi vòng đời hiện tại:** Khởi tạo (hoàn thành cổng Brief, chuyển sang Thiết kế kỹ thuật)
 - **Mô hình kiến trúc:** SaaS Multi-tenant (nền tảng chung cho nhiều chủ trọ, chia sẻ bản đồ khu phố, phân tách dữ liệu)
 - **Nhóm loại hình:** Web responsive + App mobile (đóng gói Capacitor từ 1 codebase)
-- **Chiến lược đồ họa:** Giai đoạn 1 (P1 MVP) dùng 2D phẳng/isometric sprite đơn giản; Giai đoạn 2 nâng cấp lên 2.5D/3D (Three.js/WebGL); kiến trúc Headless tách lớp giúp đổi đồ họa dễ dàng
+- **Đích đồ họa:** Thế giới 3D camera isometric cố định; xây dần bằng prototype hình khối, sprite/plane 2D trong cảnh 3D rồi thay dần bằng object 3D theo từng giai đoạn
 - **Thị trường đầu tiên:** Hà Nội — nhà trọ cho sinh viên, người đi làm
 - **Môi trường triển khai:** Local Dev → Cloud Staging/Production
 - **Repository Git:** `TEAM_ORCA/4.Du_an/QLNT` (Git riêng, nhánh `main`)

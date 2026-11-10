@@ -8,6 +8,7 @@
 | Phiên bản | Ngày | Người thực hiện | Vai trò | Tóm tắt nội dung điều chỉnh | Trạng thái |
 |---|---|---|---|---|---|
 | **1.0** | 2026-11-07 | Agent BA | Senior BA | Khởi tạo tài liệu SRS chính thức:<br>- Đặc tả chi tiết 10 module chức năng đáp ứng đầy đủ yêu cầu nghiệp vụ trong BRD.<br>- Bổ sung đặc tả phân hệ Khách vãng lai (`FR-GUEST`) và Cổng QR tức thì cho Cán bộ Điện/Nước & Công an khu vực (`FR-PORTAL-QR`).<br>- Chi tiết hóa contract `IGameRenderer` đảm bảo khả năng chuyển đổi đồ họa từ 2D lên 2.5D/3D trơn tru.<br>- Thiết lập các yêu cầu phi chức năng (Hiệu năng 60 FPS, Offline Local-First, Bảo mật dữ liệu cá nhân). | Đã duyệt |
+| **1.1** | 2026-11-09 | PM | Điều phối | Làm rõ đích 3D camera isometric cố định; P1 dựng renderer 3D đơn giản, các giai đoạn sau thay dần placeholder bằng asset 3D. | Đã duyệt định hướng |
 
 ---
 
@@ -17,7 +18,7 @@
 - **Ranh giới hệ thống:**
   - **Client Applications:** Ứng dụng Web Responsive (chạy trên Desktop & Mobile Browser), Ứng dụng Mobile Native (iOS, Android đóng gói bằng Capacitor), và Giao diện Web tức thì khi quét mã QR (Instant QR Web Portal).
   - **Core Business Engine (Headless Core):** Chạy bằng TypeScript thuần, quản lý toàn bộ trạng thái dữ liệu thật và quy tắc kinh doanh.
-  - **Pluggable Presentation Engine:** Giai đoạn 1 chạy Canvas 2D/Isometric Tilemap; Giai đoạn 2 nâng cấp lên Three.js/WebGL.
+  - **Presentation Engine:** Đích là cảnh 3D camera isometric cố định. P1 dựng nền renderer 3D bằng hình khối và sprite/plane 2D; P2–P3 thay dần placeholder bằng asset 3D theo giá trị và kết quả kiểm thử, không yêu cầu chuyển engine giữa các giai đoạn.
   - **SaaS Backend Services:** REST API, Realtime WebSocket Gateway, Hệ quản trị cơ sở dữ liệu PostgreSQL (Row-Level Security đa người thuê), Hệ thống lưu trữ ảnh Object Storage.
 
 ---
@@ -65,9 +66,9 @@ export interface IGameRenderer {
 ## 4. Đặc tả yêu cầu chức năng chi tiết (Functional Requirements — FR)
 
 ### Module 1: Quản lý tòa nhà & Sơ đồ trực quan (`FR-BLD`)
-- **FR-BLD-01 (Mô hình trực quan 2D):**
+- **FR-BLD-01 (Mô hình trực quan 3D camera cố định):**
   - Hệ thống cho phép chủ nhà cấu hình tòa nhà gồm: Số tầng, danh sách các phòng/tầng, khu để xe, lối đi và cầu thang.
-  - Hiển thị trực quan dưới dạng bản đồ 2D / isometric tilemap ô lưới. Mỗi phòng hiển thị mã phòng, tình trạng (Đang thuê / Còn trống / Đang sửa chữa).
+  - Hiển thị trong cảnh 3D camera isometric cố định. P1 có thể dùng hình khối và sprite/plane 2D; mỗi phòng hiển thị mã phòng, tình trạng (Đang thuê / Còn trống / Đang sửa chữa) và có thể được chọn.
 - **FR-BLD-02 (Phòng quản lý tập trung):**
   - Màn hình làm việc của chủ trọ ("Phòng quản lý") hiển thị tổng thể hoạt động: Tổng số phòng trống, số tiền chờ duyệt, số thiết bị đang báo hỏng. Chủ trọ điều hành mọi thao tác tại màn hình này.
 - **FR-BLD-03 (Chế độ xem dự phòng — `R-16`):**
@@ -174,7 +175,7 @@ export interface IGameRenderer {
     - Đăng tải thông báo an ninh, cảnh báo an toàn phòng ngừa trộm cắp gửi trực tiếp đến bảng tin chung của toàn bộ cư dân trong nhà trọ.
 
 ### Module 10: Bản đồ khu phố Hà Nội (`FR-MAP`)
-- **FR-MAP-01 (Khám phá khu phố 2D/2.5D — `R-09`):**
+- **FR-MAP-01 (Khám phá khu phố 3D camera cố định — `R-09`):**
   - Bản đồ mô phỏng các tuyến phố chính tại Hà Nội (Cầu Giấy, Đống Đa, Bách - Kinh - Xây...).
   - Chỉ hiển thị các tòa nhà trọ có bật chế độ "Công khai" và **chỉ hiển thị số lượng phòng đang trống** (`NT-06`).
 - **FR-MAP-02 (Lọc & Tìm kiếm):**
@@ -185,7 +186,7 @@ export interface IGameRenderer {
 ## 5. Yêu cầu phi chức năng (Non-Functional Requirements — NFR)
 
 1. **NFR-PERF (Hiệu năng đồ họa & Tải trang):**
-   - Đảm bảo tốc độ khung hình 2D Canvas đạt ổn định **60 FPS** trên cả máy tính văn phòng và điện thoại thông minh cấu hình phổ thông.
+   - Đặt mục tiêu tốc độ khung hình và tải cảnh cho renderer 3D trên nhóm thiết bị mục tiêu; ngưỡng nghiệm thu cụ thể cần được xác định sau prototype/đo hiệu năng, không mặc định 60 FPS trên mọi thiết bị.
    - Dung lượng tải ứng dụng ban đầu (Bundle size) dưới **3.5 MB**; thời gian mở Web-app qua quét mã QR dưới **2 giây**.
 2. **NFR-REL (Độ tin cậy & Ngoại tuyến):**
    - Bản Miễn phí phải hoạt động độc lập và lưu trữ dữ liệu an toàn trên trình duyệt qua **IndexedDB (Dexie.js)** khi mất kết nối mạng.

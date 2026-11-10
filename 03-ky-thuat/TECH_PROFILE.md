@@ -1,14 +1,13 @@
 # Hồ sơ kỹ thuật và môi trường — QLNT
 
-Trạng thái: `Đề xuất mảng B (Dự thảo)` — 2026-11-07.
+Trạng thái: `Đề xuất mảng B (Dự thảo)` — cập nhật lộ trình đồ họa 2026-11-09; engine cụ thể và ngưỡng hiệu năng còn cần đánh giá kỹ thuật.
 
 ## 1. Phân loại kỹ thuật đã xác nhận
 
 - **Mô hình kiến trúc:** SaaS Multi-tenant (đa chủ trọ, chia sẻ nền tảng và bản đồ chung; phân tách dữ liệu logic theo `landlord_id` / tenant).
-- **Chiến lược đồ họa 2 giai đoạn (Two-Stage Presentation Strategy):**
-  - **Giai đoạn 1 (P1 MVP — Hiện tại):** Sử dụng mô hình 2D phẳng / 2D isometric tối giản (sprites, tilemap 2D, hoạt ảnh 2D cơ bản). Ưu tiên kiểm chứng hoàn chỉnh toàn bộ luồng nghiệp vụ, tính năng quản lý, thao tác thủ công, gamification; đảm bảo hiệu năng siêu nhẹ và mượt mà trên mọi trình duyệt web và thiết bị mobile cấu hình thấp.
-  - **Giai đoạn 2 (P2–P3 — Nâng cấp):** Nâng cấp đồ họa lên 2.5D pseudo-3D hoặc 3D isometric (Three.js / WebGL / Low-poly 3D models).
-- **Yêu cầu cốt lõi về kiến trúc:** **Chuẩn bị sẵn sàng để chuyển đổi đồ họa mà không phải đập đi xây lại logic nghiệp vụ** (áp dụng kiến trúc Headless Domain Core & Presentation Adapter).
+- **Đích đồ họa:** Thế giới 3D với camera isometric cố định; không hỗ trợ xoay camera tự do trong phạm vi hiện tại.
+- **Lộ trình đồ họa tăng dần:** (1) dựng prototype 3D bằng hình khối đơn giản; (2) MVP dùng hình khối và sprite/plane 2D trong không gian 3D để kiểm chứng nghiệp vụ và hiệu năng; (3) thay dần các thành phần có giá trị bằng object, vật liệu và hoạt ảnh 3D; (4) mở rộng chất lượng và phạm vi cảnh 3D theo kết quả thử nghiệm. 2.5D có thể là cách thể hiện trung gian, không phải đích cuối.
+- **Yêu cầu cốt lõi về kiến trúc:** Dữ liệu và nghiệp vụ không phụ thuộc renderer/asset; bắt đầu bằng renderer và hệ tọa độ 3D để tránh phải thay engine khi nâng chất lượng hình ảnh. Có thể giữ nguyên phần lớn domain, nhưng renderer, asset, tương tác không gian, hiệu năng và kiểm thử vẫn cần thay đổi theo từng bước.
 - **Client:** Web Responsive + Mobile App (đóng gói bằng Capacitor/PWA từ một codebase duy nhất, hỗ trợ Android & iOS).
 - **Môi trường triển khai:** Local Dev → Cloud Staging/Production.
 
@@ -22,8 +21,8 @@ Hệ thống được thiết kế theo mô hình phân tầng nghiêm ngặt (S
 +--------------------------------------------------------------------------+
 |                       TẦNG HIỂN THỊ (PRESENTATION LAYER)                 |
 |                                                                          |
-|   [Giai đoạn 1: Canvas 2D Engine]  <--- Thay thế --->  [Giai đoạn 2: Three.js 3D] |
-|     (PixiJS / HTML5 2D Canvas)                               (WebGL / 2.5D 3D)   |
+|   [3D Renderer — prototype hình khối/sprite] ---> [3D Renderer — object 3D hoàn thiện] |
+|                Camera isometric cố định; nâng dần asset và chi tiết cảnh                 |
 |                 \                                              /         |
 |                  +--------------------+-----------------------+          |
 |                                       |                                  |
@@ -62,7 +61,7 @@ Hệ thống được thiết kế theo mô hình phân tầng nghiêm ngặt (S
    - `setDeviceStatus(deviceId, status: 'NORMAL' | 'BROKEN')` -> Hiển thị chấm than đỏ
    - `setRoomNotice(roomId, type: 'PAYMENT_DUE')` -> Hiển thị chấm than vàng
    - `playMinigameAction(actionType, toolSkin)`
-3. **Khi nâng cấp từ 2D lên 2.5D/3D:** Chỉ cần cài đặt một class mới `ThreeJsRenderer implements IGameRenderer`. 100% logic nghiệp vụ, tính toán tiền nong, phân quyền, API và database được giữ nguyên hoàn toàn.
+3. **Khi nâng cấp hình ảnh theo giai đoạn:** Giữ cùng nền tảng renderer 3D và thay dần placeholder/sprite bằng asset 3D. Domain nghiệp vụ, phân quyền, API và database được tách khỏi renderer; không giả định mọi thứ presentation giữ nguyên — mapping asset, animation, picking/tương tác không gian, hiệu năng và QA cần được cập nhật.
 
 ---
 
@@ -72,8 +71,7 @@ Hệ thống được thiết kế theo mô hình phân tầng nghiêm ngặt (S
 |---|---|---|
 | **Frontend Framework** | **TypeScript + Vue 3 / React (Vite)** | Hiện đại, tốc độ build nhanh, dễ bảo trì, hệ sinh thái phong phú |
 | **Styling** | **Tailwind CSS** | Xây dựng giao diện danh sách dự phòng (`R-16`), modal nộp bill, popup thẻ nhân vật nhanh, gọn |
-| **Engine đồ họa 2D (P1)** | **PixiJS (hoặc Phaser 3 / HTML5 Canvas 2D)** | **Ưu điểm:** Cực nhẹ, render 2D/isometric siêu mượt (60fps trên mobile), hỗ trợ sprite animation, particle effect (chấm than, khói, nhặt đồ). Dễ đóng gói vào adapter. |
-| **Engine nâng cấp (P2/P3)** | **Three.js / WebGL** | Chuyển sang 2.5D/3D isometric góc nhìn nghiêng cố định khi nghiệp vụ đã ổn định |
+| **Nền tảng renderer 3D (đề xuất)** | **Three.js / WebGL** | Dựng cảnh 3D ngay từ prototype với camera isometric cố định; dùng hình khối và plane/sprite 2D trước, sau đó thay dần bằng model 3D. Giảm rủi ro phải chuyển engine; vẫn cần kiểm thử hiệu năng trên thiết bị mục tiêu. |
 | **Mobile App Wrapper** | **Capacitor (Ionic)** | 1 codebase web duy nhất chạy thẳng trên trình duyệt, đồng thời đóng gói thành app native iOS và Android; gọi camera chụp ảnh chuyển khoản (`R-05`) mượt mà |
 | **Client Local DB (Offline)** | **IndexedDB (Dexie.js)** | Hỗ trợ bản Miễn phí chạy mượt khi không có mạng; đồng bộ dữ liệu lên cloud khi nâng cấp |
 | **Backend & SaaS Database** | **PostgreSQL (Multi-tenant) + Node.js (Fastify/NestJS) hoặc Supabase** | Hỗ trợ phân quyền dữ liệu chặt chẽ theo `landlord_id` (Row-Level Security), có sẵn WebSocket Realtime để bắn sự kiện khi khách nộp tiền hoặc chủ duyệt bill |
@@ -83,18 +81,20 @@ Hệ thống được thiết kế theo mô hình phân tầng nghiêm ngặt (S
 
 ## 4. Lộ trình triển khai kỹ thuật (Technical Roadmap)
 
-- **Bước 1 (Foundation & Core Business):** 
+- **Bước 1 (Foundation & Core Business):**
   - Dựng khung dự án Frontend (Vite + TypeScript + Tailwind).
   - Cài đặt State Management và Headless Core (Model: Tòa nhà, Tầng, Phòng, Khách, Thiết bị, Hóa đơn).
-  - Cài đặt `IGameRenderer` interface.
-- **Bước 2 (2D Canvas Renderer — P1):**
-  - Dựng renderer 2D hiển thị tòa nhà dạng ô lưới (tilemap), tầng và phòng.
-  - Vẽ avatar 2D di chuyển đơn giản giữa các phòng.
-  - Hiển thị chấm than đỏ (báo hỏng thiết bị) và chấm than vàng (kỳ đóng tiền trọ).
-  - Tích hợp minigame chuột/gián và xả giận dạng 2D sprites.
-- **Bước 3 (Thao tác nghiệp vụ & Đóng gói Mobile):**
+  - Cài đặt hợp đồng presentation và renderer 3D tối thiểu với camera cố định; xác định hệ tọa độ logic tòa nhà/phòng độc lập tọa độ màn hình.
+- **Bước 2 (Prototype 3D và MVP hình khối — P1):**
+  - Dựng một tòa nhà/tầng/phòng bằng hình khối đơn giản trong cảnh 3D; camera isometric cố định.
+  - Dùng avatar/đồ vật dạng sprite hoặc plane 2D khi phù hợp; hỗ trợ chọn phòng/đồ vật và hiển thị trạng thái nghiệp vụ.
+  - Kiểm chứng luồng đóng tiền, báo hỏng, avatar và minigame trong phạm vi MVP; đo hiệu năng trên thiết bị mục tiêu.
+- **Bước 3 (Thay dần asset và mở rộng cảnh — P2):**
+  - Thay các placeholder có giá trị người dùng nhìn thấy bằng object 3D đơn giản; giữ camera cố định và renderer.
+  - Mở rộng bản đồ/khu vực theo yêu cầu P2; bổ sung vật liệu, chiều sâu và hoạt ảnh theo từng phần được duyệt.
+- **Bước 4 (Hoàn thiện 3D — P3):**
+  - Nâng chất lượng model, ánh sáng, animation và tối ưu; chỉ mở rộng phạm vi 3D khi số liệu thử nghiệm chứng minh giá trị.
+- **Bước 5 (Thao tác nghiệp vụ & Đóng gói Mobile):**
   - Tích hợp modal upload ảnh bill chuyển khoản, nút chủ nhà duyệt tiền.
   - Tích hợp shop đổi điểm (quà, skin, sao uy tín).
-  - Đóng gói Capacitor chạy thử nghiệm trên Android/iOS.
-- **Bước 4 (Chuẩn bị cổng nâng cấp 2.5D/3D):**
-  - Viết module thử nghiệm `ThreeJsRenderer` thay thế `PixiJsRenderer` để chứng minh tính linh hoạt của kiến trúc.
+  - Đóng gói Capacitor chạy thử nghiệm trên Android/iOS; kiểm tra tải cảnh và hiệu năng trên thiết bị mục tiêu.

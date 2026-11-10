@@ -4,7 +4,7 @@ Trạng thái chung: `Dự thảo` — tổng hợp từ trao đổi với ngư�
 
 ## Tầm nhìn
 
-Ứng dụng quản lý nhà trọ **mang lại cảm giác như đang chơi game hơn là đang quản lý thật**. Chủ trọ ngồi một chỗ điều hành nhà trọ 2.5D, mỗi khách trọ là một avatar. Người thuê tìm trọ bằng cách đi dạo trong thế giới game. Thị trường đầu tiên là nhà trọ cho sinh viên và người đi làm tại Hà Nội.
+Ứng dụng quản lý nhà trọ **mang lại cảm giác như đang chơi game hơn là đang quản lý thật**. Đích trải nghiệm là thế giới nhà trọ 3D camera isometric cố định; các giai đoạn đầu có thể dùng hình khối và sprite 2D trong cảnh 3D để xây dựng dần. Mỗi khách trọ là một avatar. Người thuê tìm trọ bằng cách đi dạo trong thế giới game. Thị trường đầu tiên là nhà trọ cho sinh viên và người đi làm tại Hà Nội.
 
 ## Nguyên tắc bắt buộc
 
@@ -23,7 +23,7 @@ Trạng thái chung: `Dự thảo` — tổng hợp từ trao đổi với ngư�
 
 | ID | Yêu cầu | Vai trò | Ưu tiên | Trạng thái xác nhận | Tiêu chí chấp nhận |
 |---|---|---|---|---|---|
-| R-01 | Dựng nhà trọ dạng 2.5D: tòa nhà, tầng, phòng, chỗ để xe, lối thoát nạn | Chủ trọ | P1 | Dự thảo | Dựng được 1 tòa nhà nhiều tầng, xem từ góc 2.5D |
+| R-01 | Dựng nhà trọ trong thế giới 3D camera isometric cố định: tòa nhà, tầng, phòng, chỗ để xe, lối thoát nạn; P1 có thể dùng hình khối/plane placeholder | Chủ trọ | P1 | Dự thảo | Dựng được một tòa nhà nhiều tầng trong cảnh 3D; người dùng xem và chọn được phòng bằng camera cố định |
 | R-02 | "Phòng quản lý": chủ trọ ngồi một chỗ thao tác toàn bộ nghiệp vụ | Chủ trọ | P1 | Dự thảo | Mọi nghiệp vụ P1 làm được mà không rời màn hình chính |
 | R-03 | Khách trọ là avatar; "thẻ nhân vật" chứa thông tin khách | Chủ trọ | P1 | Dự thảo | Thêm/sửa/xem khách qua thẻ nhân vật; chỉ chủ trọ thấy |
 | R-04 | Nghiệp vụ cơ bản thể hiện bằng hoạt ảnh: nhận phòng, hợp đồng, gia hạn, trả phòng, chốt điện nước, sự cố | Chủ trọ | P1 | Dự thảo | Mỗi nghiệp vụ có hoạt ảnh và cập nhật dữ liệu thật đúng (NT-01, NT-02) |
@@ -32,7 +32,7 @@ Trạng thái chung: `Dự thảo` — tổng hợp từ trao đổi với ngư�
 | R-06 | Nhiệm vụ hằng ngày sinh ra từ việc thật; hoàn thành nhận phần thưởng trang trí | Chủ trọ | P1 | Dự thảo | Danh sách nhiệm vụ khớp việc cần làm thực tế |
 | R-07 | Chế độ xả giận: đập phá đồ vật; NPC lao công đến dọn và khôi phục nguyên trạng | Chủ trọ, khách | P1 | Đã đồng ý | Phá được đồ vật; sau khi dọn trở về đúng trạng thái ban đầu; dữ liệu thật không đổi |
 | R-08 | Avatar đứng ngoài vùng tương tác "hóng chuyện" khi có đập phá | Chủ trọ, khách | P1 | Đã đồng ý | Avatar không bị tác động, có hoạt ảnh quan sát |
-| R-09 | Bản đồ khu phố Hà Nội 2.5D; người thuê đi dạo, lọc khu vực/giá, xem phòng trống | Khách | P2 | Dự thảo | Tìm và xem được phòng trống đã đăng |
+| R-09 | Bản đồ khu phố Hà Nội trong thế giới 3D camera cố định; người thuê đi dạo, lọc khu vực/giá, xem phòng trống | Khách | P2 | Dự thảo | Tìm và xem được phòng trống đã đăng; điều khiển camera tự do không thuộc phạm vi hiện tại |
 | R-10 | Chủ trọ bật "Hiện trên bản đồ" và để thông tin liên hệ | Chủ trọ | P2 | Dự thảo | Người thuê liên hệ được chủ trọ từ ứng dụng |
 | R-11 | Chuyển trọ: người thuê tìm nhà mới trong game; avatar "dọn sang" nếu chủ trọ mới dùng QLNT | Khách | P2 | Dự thảo | Luồng chuyển trọ hoàn chỉnh |
 | R-12 | Xác minh chủ trọ và báo cáo tin sai | Quản trị | P2 | Dự thảo | Có quy trình xác minh, xử lý báo cáo |
@@ -48,9 +48,9 @@ Trạng thái chung: `Dự thảo` — tổng hợp từ trao đổi với ngư�
 
 ## Giai đoạn đề xuất
 
-- **P1 — Bản thử cảm giác game:** 1 tòa nhà 2.5D, avatar, nghiệp vụ cơ bản, quản lý thiết bị & báo hỏng (chấm than đỏ), luồng đóng tiền thủ công + chấm than vàng + chủ nhà duyệt bill + điểm thưởng, hệ sinh thái tích điểm (đổi quà trang trí, skin, vũ khí, tặng sao chủ nhà), minigame bắt chuột gián, xả giận + NPC lao công. Thử với 5–10 chủ trọ.
-- **P2 — Kết nối người thuê & Sale:** bản đồ khu phố (hiển thị sao uy tín chủ nhà), đăng tin, liên hệ, chuyển trọ, xác minh; vai trò Sale trọ tham quan phòng trống có thời hạn; đổi voucher giảm giá.
-- **P3 — Trả phí và nâng cao:** đồng bộ đám mây, hóa đơn và đối soát thanh toán tự động, tin nổi bật, đồ trang trí cao cấp, kết nối thiết bị ngoại vi.
+- **P1 — Bản thử cảm giác game:** một tòa nhà trong cảnh 3D camera cố định, dùng hình khối đơn giản và sprite/plane 2D khi phù hợp; avatar, nghiệp vụ cơ bản, thiết bị/báo hỏng, luồng đóng tiền thủ công, điểm thưởng và minigame. Thử với 5–10 chủ trọ; ưu tiên kiểm chứng tác vụ và hiệu năng trước độ chi tiết asset.
+- **P2 — Kết nối người thuê & mở rộng cảnh:** mở rộng cảnh 3D camera cố định cho bản đồ/khu vực cần thiết; thay dần placeholder bằng asset 3D ưu tiên; triển khai đăng tin, liên hệ, chuyển trọ, Sale và voucher theo phạm vi đã duyệt.
+- **P3 — Trả phí và hoàn thiện 3D:** nâng chất lượng model/animation/ánh sáng có chọn lọc; đồng bộ đám mây, hóa đơn và đối soát thanh toán tự động, tin nổi bật, kết nối thiết bị ngoại vi.
 
 ## Câu hỏi cần làm rõ
 
@@ -62,6 +62,6 @@ Trạng thái chung: `Dự thảo` — tổng hợp từ trao đổi với ngư�
 | Sử dụng điểm thưởng: đổi quà trang trí, skin thiết bị/avatar/vũ khí, voucher giảm giá, mua sao tặng chủ nhà tích lũy uy tín. | Gamification Economy | Người dùng | **Đã chốt** (2026-11-07) |
 | Đồng ý NT-05 (không chấm điểm tiêu cực cá nhân) và NT-06 (bản đồ chỉ hiện phòng trống)? | Quyền riêng tư | Người dùng | **Đã đồng ý** (2026-11-07) |
 | Một hệ thống cho nhiều chủ trọ (SaaS)? (Hướng game + bản đồ chung ngầm định là có) | Kiến trúc dữ liệu | Người dùng | **Đã xác nhận** (2026-11-07) |
-| Công nghệ web/app mobile, offline/online, đồ họa 2D -> 2.5D/3D | Kiến trúc, chi phí | Mảng B | **Đã đề xuất chiến lược 2 giai đoạn** (2026-11-07, xem `TECH_PROFILE.md`) |
+| Đích đồ họa 3D camera cố định và lộ trình nâng dần asset | Kiến trúc, chi phí, hiệu năng | Người dùng / Mảng B đánh giá khả thi | **Đã chốt định hướng** (2026-11-09, xem QLNT-D008 và `TECH_PROFILE.md`); engine và ngân sách hiệu năng cần đánh giá kỹ thuật |
 | Người phụ trách mảng A/B/C và đội ngũ đi kèm | Thẩm quyền, cổng duyệt | Người dùng | **Agent đề xuất, Người dùng phê duyệt** (2026-11-07) |
 | Chỉ số thành công và mốc thời gian | Cổng Brief | Người dùng | Chờ xác định theo tiến độ MVP |

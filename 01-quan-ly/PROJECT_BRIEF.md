@@ -9,10 +9,9 @@
 - **Đội ngũ đi kèm từng mảng:** Agent hỗ trợ thực thi theo từng vai trò subagent
 - **Vòng đời/phạm vi đang thực hiện:** Khởi tạo (hoàn tất cổng Brief, chuyển sang Thiết kế kỹ thuật)
 - **Mô hình triển khai:** SaaS Multi-tenant (nền tảng chung cho nhiều chủ nhà trọ độc lập, dùng chung bản đồ khu phố; dữ liệu phân tách theo từng chủ trọ)
-- **Chiến lược đồ họa & công nghệ:** Mô hình 2 giai đoạn:
-  - *Giai đoạn 1 (P1 MVP):* 2D / isometric phẳng, sprite và hoạt ảnh đơn giản, ưu tiên thể hiện trọn vẹn nghiệp vụ/chức năng, chạy nhẹ và mượt trên mọi thiết bị.
-  - *Giai đoạn 2 (P2-P3):* Nâng cấp lên 2.5D / 3D (Three.js / WebGL).
-  - *Kiến trúc:* Tách biệt hoàn toàn tầng Dữ liệu/Nghiệp vụ (Headless Core) với tầng Hiển thị (Renderer Adapter) để chuyển đổi và nâng cấp đồ họa dễ dàng.
+- **Đích đồ họa:** Thế giới game 3D với camera isometric cố định; không yêu cầu người dùng xoay camera tự do.
+- **Lộ trình đồ họa:** Xây dựng tăng dần qua prototype 3D đơn giản → MVP dùng hình khối và sprite 2D trong không gian 3D → thay dần bằng object 3D → hoàn thiện cảnh 3D theo từng khu vực. Phạm vi và độ trung thực đồ họa tăng theo giai đoạn, không thay toàn bộ engine giữa chừng.
+- **Kiến trúc:** Tách biệt tầng Dữ liệu/Nghiệp vụ (Headless Core) với tầng Hiển thị (Renderer Adapter); tạo renderer và hệ tọa độ 3D ngay từ nền tảng để giảm công sức chuyển đổi về sau.
 - **Client:** Web responsive + App mobile (đóng gói bằng Capacitor/PWA từ 1 codebase)
 - **Git repository:** `TEAM_ORCA/4.Du_an/QLNT` (nhánh `main`)
 - **Ngày cập nhật:** 2026-11-07
@@ -21,7 +20,7 @@
 
 ### Bao gồm
 
-- Nhà trọ 2.5D, khách trọ là avatar, nghiệp vụ quản lý thể hiện bằng hoạt ảnh (game phản ánh dữ liệu thật, không thay đổi dữ liệu thật)
+- Thế giới nhà trọ 3D camera isometric cố định; khách trọ là avatar, nghiệp vụ quản lý thể hiện bằng hoạt ảnh (game phản ánh dữ liệu thật, không thay đổi dữ liệu thật)
 - Quản lý trang thiết bị mặc định/bổ sung, cảnh báo hỏng (chấm than đỏ), cập nhật bảo trì và nhật ký sự cố từng phòng/khách
 - Quy trình đóng tiền trọ: bản Miễn phí thao tác thủ công (avatar chủ nhà gõ cửa nhắc tiền, chấm than vàng, khách làm nhiệm vụ nộp ảnh bill, avatar khách giao tiền, thưởng/trừ điểm đúng/trễ hạn); bản Trả phí tự động tích hợp QR/cổng thanh toán
 - Minigame săn bắt sinh vật nhỏ (chuột, gián) bằng vật dụng gia đình (nồi chảo, chổi dép)
