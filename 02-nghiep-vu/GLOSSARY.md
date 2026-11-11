@@ -11,6 +11,7 @@
 | Avatar | Hình đại diện của khách trọ hoặc người thuê trong game | Người dùng, 2026-11-06 | |
 | Thẻ nhân vật | Màn hình thông tin khách trọ gắn với avatar; chỉ chủ trọ thấy | Đề xuất BA | Dự thảo |
 | Phòng quản lý | Khung cảnh nơi chủ trọ ngồi một chỗ điều hành toàn bộ nhà trọ | Đề xuất BA | Dự thảo |
+| Sổ quản lý ảo | Giao diện quản lý thu chi và phòng trọ (F04 / P1) dưới dạng một cuốn sổ ghi chép hàng tháng; mỗi trang sổ là mặt bằng 2D của 1 tầng; khi chọn phòng mở ra bộ 3 trang giấy chi tiết (Thu tiền & In-place edit, Thiết bị, Lịch sử); điều hướng đóng 2 cấp theo QLNT-D010 và QLNT-D012 | Người dùng, 2026-11-11 | QLNT-D010, QLNT-D012, REF-BIZ-001 |
 | Chế độ xả giận | Chế độ cho phép đập phá đồ vật trong khung cảnh của mình | Người dùng, 2026-11-06 | NT-04 |
 | NPC lao công | Nhân vật máy đến dọn dẹp, khôi phục nguyên trạng sau khi đập phá | Người dùng, 2026-11-06 | |
 | Hóng chuyện | Avatar đứng ngoài vùng tương tác quan sát, không bị tác động | Người dùng, 2026-11-06 | NT-04 |
