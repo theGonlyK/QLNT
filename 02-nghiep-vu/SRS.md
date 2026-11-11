@@ -96,9 +96,24 @@ export interface IGameRenderer {
   - Hệ thống tự động ghi nhật ký: Ngày giờ báo hỏng, người báo, thời gian hoàn thành, chi phí sửa chữa (nếu có). Lưu vào lịch sử phòng và hồ sơ khách thuê.
 
 ### Module 4: Luồng đóng tiền trọ & Duyệt hóa đơn (`FR-PAY`)
+- **FR-PAY-00 (Cơ chế Sổ quản lý ảo & Mặt bằng tầng 2D — `QLNT-D010`, `R-02`, `R-05`):**
+  - **Hoạt ảnh:** Khi chủ nhà bắt đầu tác vụ quản lý thu tiền tại Phòng quản lý ảo, kích hoạt hoạt ảnh chủ nhà mở cuốn sổ quản lý.
+  - **Định dạng cuốn sổ:** Mỗi cuốn sổ tương ứng với **1 tháng quản lý**.
+  - **Trang mặt bằng tầng:** Trong sổ, các trang sắp xếp theo thứ tự tầng; mỗi trang thể hiện **mặt bằng 2D của 1 tầng**, hiển thị trực quan:
+    - Phòng trống (phân biệt màu sắc trực quan).
+    - Phòng đang có khách trọ.
+    - Cảnh báo tại phòng: Icon **chấm than vàng** (đến kỳ đóng tiền hoặc có bill chờ duyệt) và Icon **chấm than đỏ** (có thiết bị báo hỏng).
+  - **Bộ 3 trang giấy chi tiết phòng:** Khi chủ nhà chọn (click) vào 1 phòng trên trang mặt bằng 2D, cuốn sổ mở ra 3 trang giấy chi tiết của phòng đó:
+    - **Trang 1 — Thông tin phòng & Thu tiền:** Chỉ số điện (cũ, mới, tiêu thụ), chỉ số nước (cũ, mới, tiêu thụ), danh sách thông tin cá nhân người đang trọ (Họ tên, CCCD, SĐT liên hệ), tình trạng thanh toán tiền trọ tháng hiện tại (kèm ảnh bill chuyển khoản nếu khách đã nộp), tình trạng phòng, nút chức năng *"Xác nhận đã nhận đủ tiền"* hoặc *"Từ chối bill"*.
+    - **Trang 2 — Danh sách thiết bị phòng:** Danh mục toàn bộ trang thiết bị trong phòng (cố định và tiện nghi bổ sung) kèm trạng thái hiện tại (bình thường hoặc hỏng hóc).
+    - **Trang 3 — Nhật ký lịch sử phòng:** Toàn bộ lịch sử các kỳ thanh toán tiền trọ trước đây, lịch sử hư hỏng/sửa chữa thiết bị và lịch sử các đợt khách thuê trước đây.
+    - **Chỉnh sửa trực tiếp khi xem chi tiết (`QLNT-D011`):** Toàn bộ thông tin phòng trên Trang 1 (điện, nước, khách thuê, tình trạng phòng) và Trang 2 (danh mục, trạng thái thiết bị) có thể chỉnh sửa/thay đổi trực tiếp ngay tại chỗ (In-place Editing). Mọi thao tác thay đổi dữ liệu đều tự động ghi vết nhật ký vào Trang 3 (thời gian, trường thay đổi, giá trị cũ/mới) để bảo toàn tính toàn vẹn và minh bạch (`NT-03`).
+  - **Phân cấp điều hướng đóng/thoát (`QLNT-D012`):**
+    - Khi đang xem bộ 3 trang giấy chi tiết phòng: Thao tác đóng tờ chi tiết sẽ lật/gấp tờ giấy lại và trở về **trang mặt bằng 2D của tầng trong cuốn sổ**.
+    - Khi đang ở trang mặt bằng tầng trong sổ: Thao tác đóng sổ sẽ kích hoạt hoạt ảnh **gập cuốn sổ lại và trở về góc nhìn không gian 3D** (Phòng quản lý ảo / Toàn cảnh tòa nhà).
 - **FR-PAY-01 (Kỳ thu tiền & Gõ cửa nhắc nợ — `R-05`, `NT-08`):**
   - Khi đến kỳ thu tiền (được cấu hình trước theo chu kỳ tháng):
-    - Cửa phòng của các khách trọ chưa đóng tiền xuất hiện icon **chấm than vàng**.
+    - Cửa phòng của các khách trọ chưa đóng tiền (và biểu tượng phòng trên trang mặt bằng 2D của sổ) xuất hiện icon **chấm than vàng**.
     - Avatar chủ nhà tự động diễn hoạt hành động đi đến gõ cửa từng phòng để gửi thông báo nộp tiền thân thiện.
     - Ứng dụng gửi thông báo đẩy (push notification) chi tiết khoản tiền cần nộp (tiền phòng + tiền điện nước + dịch vụ).
 - **FR-PAY-02 (Nộp bill chuyển khoản — Bản Miễn phí):**
@@ -107,11 +122,12 @@ export interface IGameRenderer {
   - Bấm "Xác nhận nộp tiền":
     - Hệ thống ghi nhận trạng thái hóa đơn là `CHỜ_DUYỆT`.
     - Diễn hoạt game: Avatar khách trọ tự động rời phòng, đi đến gặp avatar chủ nhà (hoặc phòng của chủ nhà) để đưa tiền.
-- **FR-PAY-03 (Chủ nhà duyệt bill & Hoàn tất nhiệm vụ — `R-05`):**
-  - Chủ nhà nhận thông báo có bill mới, mở ảnh kiểm tra đối chiếu tài khoản thực tế.
+- **FR-PAY-03 (Chủ nhà mở sổ duyệt bill & Hoàn tất nhiệm vụ — `R-05`, `QLNT-D010`):**
+  - Chủ nhà nhận thông báo có bill mới, mở Sổ quản lý ảo của tháng, chọn phòng đang hiển thị chấm than vàng trên mặt bằng 2D.
+  - Trên **Trang 1** của phòng trong sổ, chủ nhà xem ảnh chụp bill đối chiếu tài khoản thực tế.
   - Chủ nhà bấm nút **"Xác nhận đã nhận đủ tiền"**:
     - Trạng thái hóa đơn chuyển sang `ĐÃ_THANH_TOÁN`.
-    - Icon chấm than vàng trước cửa phòng biến mất.
+    - Icon chấm than vàng trước cửa phòng 3D và trên mặt bằng 2D của sổ lập tức biến mất.
     - Kích hoạt sự kiện hoàn thành nhiệm vụ và cộng điểm thưởng cho khách trọ.
 - **FR-PAY-04 (Bản Trả phí — Tự động hóa qua VietQR động — `R-05b`):**
   - Hóa đơn sinh mã VietQR động chứa sẵn số tiền và mã hóa đơn riêng biệt từng phòng.

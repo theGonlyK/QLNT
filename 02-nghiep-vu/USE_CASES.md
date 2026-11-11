@@ -93,27 +93,50 @@
 
 ---
 
-### `UC-PAY-03`: Chủ nhà kiểm tra & Duyệt nộp tiền (Tắt chấm than vàng, cộng điểm)
+### `UC-PAY-03`: Chủ nhà mở Sổ quản lý ảo kiểm tra & Duyệt nộp tiền (Tắt chấm than vàng, cộng điểm)
 - **Actor chính:** Chủ nhà.
 - **Actor phụ:** Khách trọ, Game Renderer.
-- **Màn hình liên quan:** Popup "Duyệt hóa đơn phòng [X]" (`SCR-LL-APPROVE-PAY`).
+- **Màn hình liên quan:** Màn hình "Sổ quản lý ảo tháng [X]" (`SCR-LL-LEDGER`) & Bộ 3 trang giấy chi tiết phòng.
+- **Tiền điều kiện:** Khách trọ đã nộp ảnh bill chuyển khoản (Hóa đơn ở trạng thái `CHỜ_DUYỆT`).
 
 #### Luồng giao dịch chính (Main Flow):
-1. Chủ nhà mở app, nhấp vào thông báo hoặc click vào phòng đang có bill chờ duyệt.
-2. Màn hình hiển thị ảnh chụp bill rõ nét. Chủ nhà kiểm tra tài khoản ngân hàng thực tế thấy tiền đã vào đúng số tiền.
-3. Chủ nhà bấm nút **"Xác nhận đã nhận đủ tiền"**.
-4. Tầng Core cập nhật hóa đơn sang trạng thái `ĐÃ_THANH_TOÁN` (`PAID`).
-5. Tính toán điểm thưởng:
-   - Nếu nộp trước hạn: Cộng `+100 điểm thưởng`.
-   - Nếu nộp đúng hạn: Cộng `+50 điểm thưởng`.
-   - Nếu nộp trễ hạn: Trừ điểm theo số ngày trễ (`-10 điểm/ngày`).
-6. Core phát lệnh `setRoomPaymentAlert(roomId, false)`: **Icon chấm than vàng ở cửa phòng lập tức biến mất**.
-7. Renderer hiển thị hiệu ứng sao lấp lánh trên đầu avatar khách kèm số điểm cộng `+50 Điểm thưởng! ⭐`.
-8. Hệ thống gửi thông báo đến khách trọ: *"Chủ nhà đã duyệt thanh toán thành công! Bạn nhận được +50 điểm thưởng."*
+1. Chủ nhà nhận thông báo có bill nộp tiền mới (hoặc chủ động ngồi tại Phòng quản lý ảo mở Sổ quản lý).
+2. Diễn hoạt hoạt ảnh: Chủ nhà mở cuốn **Sổ quản lý ảo** tương ứng với tháng hiện tại.
+3. Cuốn sổ hiển thị các trang sắp xếp theo từng tầng; mỗi trang là **mặt bằng 2D của 1 tầng**, trực quan hóa trạng thái:
+   - Phòng trống (màu xanh lá/xám nhạt).
+   - Phòng đang có khách trọ.
+   - Icon **chấm than vàng** nhấp nháy tại phòng có bill nộp tiền đang chờ duyệt (hoặc phòng nợ tiền).
+   - Icon **chấm than đỏ** nhấp nháy tại phòng đang có báo hỏng thiết bị.
+4. Chủ nhà nhấp chọn vào phòng có chấm than vàng trên mặt bằng 2D tầng.
+5. Cuốn sổ lật tiếp đến **bộ 3 trang giấy chi tiết** của phòng:
+   - **Trang 1 — Thông tin phòng & Thu tiền:** Số điện (cũ/mới/tiêu thụ), số nước (cũ/mới/tiêu thụ), danh sách thông tin cá nhân người đang trọ (Họ tên, CCCD, SĐT), tình trạng tiền phòng và ảnh chụp rõ nét biên lai chuyển khoản do khách nộp.
+   - **Trang 2 — Danh sách thiết bị:** Toàn bộ thiết bị cố định và bổ sung trong phòng kèm trạng thái hiện tại (bình thường / hỏng).
+   - **Trang 3 — Nhật ký lịch sử phòng:** Lịch sử thanh toán các tháng trước, lịch sử bảo trì sửa chữa và các đợt khách thuê trước đây.
+6. Chủ nhà kiểm tra đối chiếu tài khoản ngân hàng thực tế, bấm nút **"Xác nhận đã nhận đủ tiền"** ngay trên Trang 1 của cuốn sổ.
+7. Tầng Core cập nhật hóa đơn sang trạng thái `ĐÃ_THANH_TOÁN` (`PAID`).
+8. Tính toán điểm thưởng:
+   - Nộp trước hạn: Cộng `+100 điểm thưởng`.
+   - Nộp đúng hạn: Cộng `+50 điểm thưởng`.
+   - Nộp trễ hạn: Trừ điểm theo số ngày trễ (`-10 điểm/ngày`).
+9. Core phát lệnh `setRoomPaymentAlert(roomId, false)`: **Icon chấm than vàng lập tức biến mất ở cả cửa phòng 3D và trên mặt bằng 2D của cuốn sổ**.
+10. Renderer hiển thị hiệu ứng sao lấp lánh trên đầu avatar khách kèm số điểm cộng `+50 Điểm thưởng! ⭐`.
+11. Hệ thống gửi thông báo đến khách trọ: *"Chủ nhà đã duyệt thanh toán thành công! Bạn nhận được +50 điểm thưởng."*
 
 #### Luồng ngoại lệ (Alternative Flow — Từ chối bill):
-- Nếu tiền chưa về hoặc ảnh bill sai, chủ nhà bấm "Từ chối", nhập lý do.
-- Hóa đơn quay về trạng thái `CHỜ_THANH_TOÁN`. Icon chấm than vàng tiếp tục giữ nguyên. App khách nhận thông báo nộp lại bill.
+- Nếu tiền chưa về hoặc ảnh bill không hợp lệ, chủ nhà bấm "Từ chối" trên Trang 1 của sổ và nhập lý do.
+- Hóa đơn quay về trạng thái `CHỜ_THANH_TOÁN`. Icon chấm than vàng tiếp tục giữ nguyên trên cửa phòng 3D và mặt bằng 2D. App khách nhận thông báo nộp lại bill.
+
+#### Luồng mở rộng (Chỉnh sửa trực tiếp thông tin phòng khi xem chi tiết — `QLNT-D011`):
+1. Trong khi đang mở xem bộ 3 trang giấy chi tiết của phòng trong Sổ quản lý:
+   - **Tại Trang 1:** Chủ nhà có thể click trực tiếp vào các trường chỉ số điện/nước để nhập số mới, chỉnh sửa thông tin người thuê (thêm/bớt người ở cùng, sửa SĐT, CCCD), hoặc cập nhật trạng thái phòng (đang ở, trả phòng, đặt cọc).
+   - **Tại Trang 2:** Chủ nhà có thể thêm thiết bị mới vào phòng, chuyển trạng thái thiết bị (bình thường $\leftrightarrow$ hỏng), hoặc cập nhật ghi chú sửa chữa.
+2. Khi chủ nhà bấm **"Lưu thay đổi"**:
+   - Tầng Core cập nhật trạng thái dữ liệu thật.
+   - Hệ thống tự động ghi một bản ghi nhật ký lưu vết (Audit Log) vào **Trang 3** (ghi rõ: Thời gian, người chỉnh sửa, nội dung trường thay đổi từ giá trị cũ sang giá trị mới) nhằm tuân thủ nguyên tắc `NT-03`.
+
+#### Luồng phân cấp đóng/thoát (`QLNT-D012`):
+- Khi đang xem bộ 3 trang giấy chi tiết phòng, chủ nhà bấm nút đóng/quay lại: Tờ giấy chi tiết phòng gập lại và giao diện quay về **trang mặt bằng 2D của tầng trong cuốn sổ tháng**.
+- Khi đang ở trang mặt bằng tầng trong sổ, chủ nhà bấm nút "Đóng sổ": Cuốn sổ gập lại đặt lên bàn làm việc ảo và camera quay về **góc nhìn không gian 3D** (Phòng quản lý ảo / Toàn cảnh tòa nhà).
 
 ---
 

@@ -4,6 +4,8 @@ Trạng thái chung: `Dự thảo` — tổng hợp từ trao đổi với ngư�
 
 ## Tầm nhìn
 
+> **Lưu ý:** Xem chi tiết ma trận phân rã và tiêu chí nghiệm thu kiểm tra được cho giai đoạn P1 tại [MA_TRAN_TRUY_VET_P1.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/02-nghiep-vu/MA_TRAN_TRUY_VET_P1.md).
+
 Ứng dụng quản lý nhà trọ **mang lại cảm giác như đang chơi game hơn là đang quản lý thật**. Đích trải nghiệm là thế giới nhà trọ 3D camera isometric cố định; các giai đoạn đầu có thể dùng hình khối và sprite 2D trong cảnh 3D để xây dựng dần. Mỗi khách trọ là một avatar. Người thuê tìm trọ bằng cách đi dạo trong thế giới game. Thị trường đầu tiên là nhà trọ cho sinh viên và người đi làm tại Hà Nội.
 
 ## Nguyên tắc bắt buộc
