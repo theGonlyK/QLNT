@@ -23,20 +23,29 @@
 
 ---
 
-## 2. Báo cáo độc lập — [Tech Lead] (Kiến trúc & Kỹ thuật)
-- **Phạm vi phụ trách:** `DI_...DYQ` (Task cha) và 3 subtask (`DI_...ERk`, `DI_...ERo`, `DI_...ERw`).
+## 2. Báo cáo độc lập — [Tech Lead & Hạ tầng Vận hành (Mảng B + C)] (Kiến trúc, Kỹ thuật, Máy chủ & Cloud)
+- **Phạm vi phụ trách:** `DI_...DYQ` (Task cha) và các subtask (`DI_...ERk`, `DI_...ERo`, `DI_...ERw`, cùng subtask mới về Hạ tầng Cloud/Server).
 - **Kiểm tra tài liệu & điều kiện thực hiện:**
-  - **Đạt:** Đã có [TECH_PROFILE.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/03-ky-thuat/TECH_PROFILE.md), báo cáo 5 nhóm object [DANH_GIA_THU_VIEN_3D_OBJECTS.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/03-ky-thuat/DANH_GIA_THU_VIEN_3D_OBJECTS.md) và tài liệu tham khảo Sổ ảo 3D [REF_SO_QUAN_LY_AO_3D.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/2.Tai_lieu_tham_khao/3.Tai_lieu_nghiep_vu/REF_SO_QUAN_LY_AO_3D.md).
-  - **Còn thiếu:** Trong `TECH_PROFILE.md`, giao diện `IGameRenderer` mới chỉ định nghĩa các hàm cho tòa nhà/avatar (`renderBuilding`, `spawnAvatar`, `setDeviceStatus`), **chưa cập nhật hợp đồng giao tiếp cho phân hệ Sổ quản lý ảo F04** (`openLedgerBook`, `selectFloorPage`, `openRoomDetailSheet`, `updateRoomFieldInPlace`, `closeDetailSheet`, `closeLedgerBook`) theo quyết định `QLNT-D010`, `QLNT-D011`, `QLNT-D012`.
-- **Kiểm tra công cụ, môi trường, thư viện:**
+  - **Đạt:** Đã có [TECH_PROFILE.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/03-ky-thuat/TECH_PROFILE.md), báo cáo 5 nhóm object [DANH_GIA_THU_VIEN_3D_OBJECTS.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/03-ky-thuat/DANH_GIA_THU_VIEN_3D_OBJECTS.md), tài liệu tham khảo Sổ ảo 3D [REF_SO_QUAN_LY_AO_3D.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/2.Tai_lieu_tham_khao/3.Tai_lieu_nghiep_vu/REF_SO_QUAN_LY_AO_3D.md), và đã bổ sung báo cáo chuyên sâu [DANH_GIA_HA_TANG_CLOUD_VA_TRI_THUC_VAN_HANH.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/03-ky-thuat/DANH_GIA_HA_TANG_CLOUD_VA_TRI_THUC_VAN_HANH.md).
+  - **Còn thiếu:**
+    1. Trong `TECH_PROFILE.md`, giao diện `IGameRenderer` mới chỉ định nghĩa các hàm cho tòa nhà/avatar, **chưa cập nhật hợp đồng giao tiếp cho phân hệ Sổ quản lý ảo F04** (`openLedgerBook`, `selectFloorPage`, `openRoomDetailSheet`, `updateRoomFieldInPlace`, `closeDetailSheet`, `closeLedgerBook`) theo quyết định `QLNT-D010`..`D012`.
+    2. **Về Hạ tầng Triển khai Máy chủ & Cloud (`04-van-hanh/QUALITY_AND_RELEASE.md`):** Toàn bộ các mục (Cách phát hành/triển khai, Kế hoạch rollback, Môi trường STG/PROD) đang ở trạng thái `[Cần xác nhận]`. Chưa chốt giữa **Phương án 1 (Managed Cloud/BaaS: Cloudflare Pages + Supabase Singapore + Cloudflare R2/Supabase Private Storage)** và **Phương án 2 (VPS Việt Nam chạy Docker Compose + PostgreSQL + MinIO + Cloudflare CDN)**.
+- **Kiểm tra công cụ, môi trường, thư viện & Hạ tầng Cloud/Container:**
   - Máy trạm đã có `Node.js v23.11.0` và `npm`.
-  - **Chưa có:** Trình quản lý gói tốc độ cao `pnpm` (hoặc `bun`); repo `4.Du_an/QLNT` hiện mới có tài liệu Markdown, chưa khởi tạo khung mã nguồn (`package.json`, `tsconfig.json`, `vite`, `three`, `@types/three`, `zustand`/`pinia`, `tailwindcss`, `@capacitor/core`) trên nhánh thử nghiệm kỹ thuật (PoC/Spike) để đo đạc FPS và bộ nhớ thực tế giữa 2 phương án *Three.js Mesh + CanvasTexture* và *Three.js + DOM Overlay*.
-  - Nhóm công cụ AI hỗ trợ code (`repomix`, `planning-with-files`, `superpowers`) trong `SO_DANG_KY_CONG_CU_AI.md` đang ở trạng thái `Hoãn đến khi có repo sản phẩm` — cần xin chủ dự án kích hoạt khi bắt đầu dựng PoC.
+  - **Chưa có công cụ Frontend/PoC:** Chưa cài `pnpm` (hoặc `bun`); chưa khởi tạo nhánh PoC (`package.json`, `vite`, `three`, `@types/three`) để đo đạc FPS và bộ nhớ thực tế trên mobile.
+  - **Chưa có công cụ Container & Cloud CLI (`Observed NOT INSTALLED`):** Máy trạm **chưa cài đặt `docker`, `docker-compose` (hoặc `OrbStack`)**, cũng như chưa cài đặt các CLI triển khai Cloud (`supabase`, `vercel`, `wrangler`, `railway`, `aws`, `gcloud`).
+  - **Chưa có CI/CD & STG Checklist:** Repo `4.Du_an/QLNT` chưa có `.github/workflows/` để tự động build/test và chưa ánh xạ biểu mẫu `X02_Checklist_Check Enviroment (STG) Before build.xlsx` sang quy trình kiểm tra môi trường STG.
 - **Rủi ro phát hiện:**
-  - Đánh giá hiệu năng WebGL/Three.js trên mobile mà không có môi trường PoC thực tế dễ dẫn đến sai lệch ước lượng FPS và hiện tượng tràn bộ nhớ (CanvasTexture memory leak) khi lật nhiều trang sổ.
+  1. Đánh giá hiệu năng WebGL/Three.js trên mobile mà không có môi trường PoC thực tế dễ dẫn đến sai lệch ước lượng FPS và tràn bộ nhớ CanvasTexture.
+  2. **Rủi ro bảo mật lưu trữ Cloud (`Cao`):** Trang 1 của Sổ quản lý ảo F04 chứa CCCD/SĐT khách thuê và ảnh chụp bill chuyển khoản (`R-05`). Nếu Object Storage không cấu hình `Private Bucket + Signed URL` và Database không bật `Row-Level Security (RLS)` theo `landlord_id`, dữ liệu cá nhân giữa các nhà trọ có nguy cơ bị lộ lọt.
+  3. **Rủi ro môi trường triển khai (`Trung bình`):** Thiếu Docker cục bộ và môi trường Staging (HTTPS Preview URL) sẽ khiến QA và Chủ dự án không thể nghiệm thu thao tác chạm/mở sổ 3D trên thiết bị di động thật.
 - **Đề xuất & Vị trí xử lý:**
-  - **Đề xuất:** (1) Cập nhật ngay đặc tả `IGameRenderer` và Event Bus cho Sổ quản lý ảo F04 trong `03-ky-thuat/TECH_PROFILE.md`; (2) Cài đặt `pnpm` và tạo branch PoC gắn với task `DI_...ERk` để benchmark 2 phương án render Sổ 3D.
-  - **Vị trí xử lý:** `Tech Lead` & `Tech Contributor`.
+  - **Đề xuất:**
+    1. Cập nhật đặc tả `IGameRenderer` cho Sổ F04 trong `TECH_PROFILE.md`.
+    2. Cài đặt `pnpm` và tạo branch PoC gắn với task `DI_...ERk`.
+    3. Trình Chủ dự án chốt phương án hạ tầng máy chủ/Cloud dựa trên báo cáo `03-ky-thuat/DANH_GIA_HA_TANG_CLOUD_VA_TRI_THUC_VAN_HANH.md` (Khuyên dùng **Cloudflare Pages + Supabase + R2** cho STG/Pilot P1 để có ngay HTTPS URL với chi phí $0–$25/tháng, kết hợp **Docker Compose** cho Local Dev).
+    4. Cài đặt `Docker Desktop` / `OrbStack` trên máy trạm và thiết lập GitHub Actions CI/CD + STG Checklist.
+  - **Vị trí xử lý:** `Tech Lead` & `Tech Contributor` (phối hợp `QA Lead` kiểm tra STG).
 
 ---
 
@@ -166,3 +175,5 @@
 | **ISS-06** | `[Issue][3D Artist] Máy trạm chưa cài đặt Blender 4.x, Python >= 3.11 (bpy) và gltf-transform cho pipeline sand3d` | Trung bình (Chặn ở P2) | 3D Artist Lead | Sprint 1 vẫn hoàn thành bình thường các tài liệu Brief 3D; trước khi chạy script sinh model `.glb` thực tế cần cài Blender 4.x + Python 3.11 (`bpy`) + `@gltf-transform/cli` và tải gói asset mẫu Kenney CC0. | `3D Artist Lead`, `Tech Lead` |
 | **ISS-07** | `[Issue][Knowledge Governance] Sổ đăng ký tri thức (SO_DANG_KY_TRI_THUC.md) chưa cập nhật các tài liệu tham khảo mới và lệch version plugin` | Thấp | Knowledge Governance Lead | Đăng ký `REF_SO_QUAN_LY_AO_3D.md`, `KENNEY_3D_ASSET_REFERENCE.md`, `NGHIEN_CUU_SANDFLOW_AI_VA_3D_GENERATION.md` vào `SO_DANG_KY_TRI_THUC.md` và đồng bộ version `0.1.5` trong `HANDOVER.md`. | `Knowledge Governance Lead` |
 | **ISS-08** | `[Issue][PM] Cần lập tài liệu Bản đồ phụ thuộc (Dependency Map) & Checklist sẵn sàng (DoR) trình Chủ dự án duyệt mở Sprint 1` | Cao | PM Lead | Tổng hợp tài liệu kế hoạch và điều kiện sẵn sàng tại `01-quan-ly/SPRINT_1_READINESS_AND_DEPENDENCIES.md` để trình Chủ dự án phê duyệt. | `PM Lead`, `PM Agent` |
+| **ISS-09** | `[Issue][Tech/Infra] Chưa chốt phương án hạ tầng máy chủ/Cloud (BaaS vs VPS Docker) và kiến trúc bảo mật lưu trữ ảnh bill/CCCD cho STG & PROD` | Cao | Tech Lead, Mảng C | Đối sánh chi phí, bảo mật (`RLS`, `Signed URL`) và hiệu năng CDN giữa *Cloudflare + Supabase* và *VPS Việt Nam + Docker Compose* theo `03-ky-thuat/DANH_GIA_HA_TANG_CLOUD_VA_TRI_THUC_VAN_HANH.md` để trình Chủ dự án chốt quyết định `QLNT-D013`. | `Tech Lead`, `Tech Contributor` |
+| **ISS-10** | `[Issue][Tech/DevOps] Máy trạm chưa cài đặt Docker (OrbStack/Docker Desktop), Cloud CLI và chưa thiết lập CI/CD + STG Environment Checklist (X02)` | Trung bình | Tech Lead, QA Lead | Cài đặt `Docker` / `OrbStack` và Cloud CLI trên máy trạm; thiết lập `docker-compose.yml` cho Local Dev, `.github/workflows/` cho STG và cập nhật `04-van-hanh/QUALITY_AND_RELEASE.md` theo chuẩn X02 STG Checklist. | `Tech Contributor`, `QA Lead` |
