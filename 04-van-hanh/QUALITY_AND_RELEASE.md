@@ -38,14 +38,15 @@
 
 ---
 
-## 4. Cách phát hành / Triển khai (Release & Deployment Pipeline)
+## 4. Cách phát hành / Triển khai & Kiểm soát Chi phí (Release, Deployment & Cost Control)
 
-- **Giai đoạn 1 (Sprint 1–3 — Staging & MVP Demo):**
-  - Tự động hóa qua **GitHub Actions CI/CD** $\rightarrow$ triển khai Frontend & 3D Assets lên **Cloudflare Pages**, kết nối **Supabase (Singapore)** và **Cloudflare R2 (Private Storage)**.
-- **Giai đoạn 2 (Pilot Thực tế tại Hà Nội — 50 đến 300 chủ trọ):**
-  - Triển khai trên **01 Cloud VPS tại Việt Nam (`4 vCPU, 8GB RAM, 100GB NVMe SSD`)** chạy **Docker Compose** (`Caddy + API + PostgreSQL 16 + Redis 7`), đứng sau **Cloudflare CDN & R2**.
-- **Giai đoạn 3 (Scale-up SaaS — > 1.000 chủ trọ):**
-  - Nâng cấp lên cụm HA tách rời **02 App Nodes (`4 vCPU, 8GB RAM`)** và **01 Dedicated DB Node (`4 vCPU, 16GB RAM, 250GB NVMe`)**.
+- **Nguyên tắc ưu tiên số 1 ("Dễ & Không mất phí — `$0 First`"):**
+  - Mặc định triển khai trên **Giai đoạn 1 (`$0/tháng` — Free Tier):** Tự động hóa qua **GitHub Actions CI/CD** $\rightarrow$ triển khai Frontend & 3D Assets lên **Cloudflare Pages**, kết nối **Supabase Free Tier (Singapore)** và **Cloudflare R2 Free Tier (`10GB`, `0đ Egress`)** kết hợp lưu trữ cục bộ **`IndexedDB` (Local-First)**.
+- **Quy trình bắt buộc khi đề xuất tăng hoặc giảm chi phí (Chuyển sang Giai đoạn 2 hoặc 3):**
+  - Mọi đề xuất thay đổi làm tăng/giảm chi phí (như thuê VPS Việt Nam `4 vCPU, 8GB RAM` ở Giai đoạn 2 hay tách cụm HA ở Giai đoạn 3) **bắt buộc phải lập báo cáo đánh giá lại 2 chiều**:
+    1. **Đánh giá lại cấu trúc hạ tầng:** Đã tối ưu hết mức ở tầng Client (`IndexedDB`), nén ảnh `< 300KB`, nén 3D `.glb` và Cache trên Cloudflare Edge để giữ mức `$0/tháng` hay chưa?
+    2. **Đánh giá lại phạm vi triển khai:** Có thể điều chỉnh phạm vi tính năng (ví dụ: giới hạn thời gian lưu ảnh bill sau khi đã duyệt xong, phân tầng tính năng Realtime) để không phát sinh chi phí hay không?
+  - Chỉ thực hiện nâng cấp/thay đổi sau khi Chủ dự án phê duyệt kết quả đánh giá lại này.
 
 ---
 
