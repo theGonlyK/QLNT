@@ -54,13 +54,22 @@ Hệ thống được thiết kế theo mô hình phân tầng nghiêm ngặt (S
 
 ### Chi tiết cơ chế "Dễ chuyển đổi đồ họa" (Pluggable Renderer):
 1. **Headless Domain Core:** Toàn bộ dữ liệu thật và quy tắc nghiệp vụ (thêm khách, duyệt tiền, báo hỏng, trừ điểm, tính sao uy tín) được viết bằng Pure TypeScript / State Store độc lập hoàn toàn với Canvas/DOM.
-2. **Interface `IGameRenderer`:** Định nghĩa tập lệnh trừu tượng cho game:
-   - `renderBuilding(buildingData)`
-   - `spawnAvatar(avatarId, roomPosition, skinConfig)`
-   - `moveAvatar(avatarId, targetPosition, onComplete)`
-   - `setDeviceStatus(deviceId, status: 'NORMAL' | 'BROKEN')` -> Hiển thị chấm than đỏ
-   - `setRoomNotice(roomId, type: 'PAYMENT_DUE')` -> Hiển thị chấm than vàng
-   - `playMinigameAction(actionType, toolSkin)`
+2. **Interface `IGameRenderer`:** Định nghĩa tập lệnh trừu tượng cho game và phân hệ Sổ quản lý ảo F04 (chi tiết tại `02-nghiep-vu/DAC_TA_SO_QUAN_LY_AO_SINGLE_PAGE_VA_RENDERER.md`):
+   - *Nhóm cảnh 3D tòa nhà & avatar:*
+     - `renderBuilding(buildingData)`
+     - `spawnAvatar(avatarId, roomPosition, skinConfig)`
+     - `moveAvatar(avatarId, targetPosition, onComplete)`
+     - `setDeviceStatus(roomId, deviceId, status: 'NORMAL' | 'BROKEN')` -> Hiển thị/tắt chấm than đỏ
+     - `setRoomNotice(roomId, type: 'NONE' | 'PAYMENT_DUE' | 'BILL_PENDING')` -> Hiển thị/tắt chấm than vàng
+     - `playMinigameAction(actionType, toolSkin)`
+   - *Nhóm điều khiển Sổ quản lý ảo F04 (`QLNT-D010`..`QLNT-D013` — học hỏi từ `REF-BIZ-001`):*
+     - `openLedgerBook(monthKey, initialFloorIndex, floorMapData)` -> Hoạt ảnh chủ nhà mở sổ quản lý tháng, hiển thị mặt bằng 2D tầng
+     - `flipLedgerFloorPage(targetFloorIndex, floorMapData)` -> Hiệu ứng lật trang chuyển tầng trong sổ
+     - `openRoomDetailSinglePage(roomId, activeTab, roomDetailData)` -> Mở tờ chi tiết phòng ở chế độ **Single-Page** (`QLNT-D013`)
+     - `switchRoomDetailPageTab(roomId, targetTab, roomDetailData)` -> Chuyển qua lại giữa Trang 1 (Thông tin & Tiền), Trang 2 (Thiết bị), Trang 3 (Lịch sử)
+     - `refreshRoomDetailView(roomId, updatedDetailData)` -> Đồng bộ lại giao diện sau khi Headless Core xử lý xong `in-place edit` (`QLNT-D011`) và ghi vết Trang 3 (`NT-03`)
+     - `closeRoomDetailToFloorMap(updatedFloorMapData)` -> Đóng cấp 1 (`QLNT-D012`): Đóng tờ chi tiết quay về mặt bằng tầng trong sổ
+     - `closeLedgerBookTo3DScene()` -> Đóng cấp 2 (`QLNT-D012`): Gập sổ quay về không gian 3D Isometric
 3. **Khi nâng cấp hình ảnh theo giai đoạn:** Giữ cùng nền tảng renderer 3D và thay dần placeholder/sprite bằng asset 3D. Domain nghiệp vụ, phân quyền, API và database được tách khỏi renderer; không giả định mọi thứ presentation giữ nguyên — mapping asset, animation, picking/tương tác không gian, hiệu năng và QA cần được cập nhật.
 
 ---
