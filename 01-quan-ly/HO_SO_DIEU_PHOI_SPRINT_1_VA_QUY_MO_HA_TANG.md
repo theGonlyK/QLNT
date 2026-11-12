@@ -3,10 +3,11 @@
 - **Dự án:** Quản lý nhà trọ (QLNT)
 - **Tác giả:** PM Lead (Codex / PM vận hành)
 - **Ngày lập:** 2026-11-12
-- **Trạng thái:** `Đề xuất trình Chủ dự án phê duyệt kích hoạt Sprint 1`
+- **Trạng thái:** `Đã được Chủ dự án phê duyệt (QLNT-D014) — Hạ tầng & chuẩn thực thi cho Dev được quản lý chính thức tại 04-van-hanh/`
 - **Căn cứ tham chiếu:**
-  - `3.DOC_AI/quan-tri/RULES_CORE.md` (Mục 8: Không tự mở sprint hay ấn định ngày bắt đầu khi Chủ dự án chưa duyệt)
-  - `01-quan-ly/DECISIONS.md` (Từ `QLNT-D001` đến `QLNT-D013`)
+  - `3.DOC_AI/quan-tri/RULES_CORE.md`
+  - `01-quan-ly/DECISIONS.md` (Từ `QLNT-D001` đến `QLNT-D014`)
+  - `04-van-hanh/HA_TANG_VA_VAN_HANH_HE_THONG.md` & `04-van-hanh/QUALITY_AND_RELEASE.md` (Hồ sơ chuẩn để các Dev bám theo thực hiện)
   - `01-quan-ly/BAO_CAO_DANH_GIA_SAN_SANG_SPRINT_1.md` (Báo cáo rà soát độc lập của 9 Lead)
 
 ---

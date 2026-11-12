@@ -9,7 +9,7 @@ Trạng thái: `Đề xuất mảng B (Dự thảo)` — cập nhật lộ trìn
 - **Lộ trình đồ họa tăng dần:** (1) dựng prototype 3D bằng hình khối đơn giản; (2) MVP dùng hình khối và sprite/plane 2D trong không gian 3D để kiểm chứng nghiệp vụ và hiệu năng; (3) thay dần các thành phần có giá trị bằng object, vật liệu và hoạt ảnh 3D; (4) mở rộng chất lượng và phạm vi cảnh 3D theo kết quả thử nghiệm. 2.5D có thể là cách thể hiện trung gian, không phải đích cuối.
 - **Yêu cầu cốt lõi về kiến trúc:** Dữ liệu và nghiệp vụ không phụ thuộc renderer/asset; bắt đầu bằng renderer và hệ tọa độ 3D để tránh phải thay engine khi nâng chất lượng hình ảnh. Có thể giữ nguyên phần lớn domain, nhưng renderer, asset, tương tác không gian, hiệu năng và kiểm thử vẫn cần thay đổi theo từng bước.
 - **Client:** Web Responsive + Mobile App (đóng gói bằng Capacitor/PWA từ một codebase duy nhất, hỗ trợ Android & iOS).
-- **Môi trường triển khai:** Local Dev → Cloud Staging/Production.
+- **Môi trường triển khai & Chuẩn vận hành cho Dev (`QLNT-D014`):** Local Dev → Cloud Staging (Cloudflare Pages + Supabase + Cloudflare R2) → Production (VPS Việt Nam `4 vCPU, 8GB RAM, 100GB NVMe` chạy Docker Compose + Cloudflare R2/CDN). Chi tiết quy mô cấu hình, bảo mật `RLS`/`Signed URL` và ngưỡng tự động hạ cấp hiệu năng (`FPS < 30` hoặc `RAM < 3GB`) được quản lý tập trung tại [`04-van-hanh/HA_TANG_VA_VAN_HANH_HE_THONG.md`](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/04-van-hanh/HA_TANG_VA_VAN_HANH_HE_THONG.md) và [`04-van-hanh/QUALITY_AND_RELEASE.md`](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/04-van-hanh/QUALITY_AND_RELEASE.md).
 
 ---
 
