@@ -7,7 +7,7 @@
 - **Repository quản lý Task & Code:** `theGonlyK/QLNT` (Đồng bộ 100% với GitHub Project `#2` theo `RULES_CORE.md` Mục 8)
 - **Căn cứ lập kế hoạch:**
   - `3.DOC_AI/quan-tri/RULES_CORE.md` (Đặc biệt **Mục 8**: Quản lý 100% task trong repo `QLNT` & lưu vết hoàn thành; **Mục 10**: Điều phối theo độ ưu tiên, tự động nâng độ ưu tiên khi chặn task phía sau, và chạy song song các task độc lập khi có Agent trống).
-  - `01-quan-ly/DECISIONS.md` (`QLNT-D001` $\rightarrow$ `QLNT-D015`, gồm Quyết định chốt Cổng G1 `QLNT-D015` và nguyên tắc **Ưu tiên phương án dễ & không mất phí `$0 First`** `QLNT-D014`).
+  - `01-quan-ly/DECISIONS.md` (`QLNT-D001` $\rightarrow$ `QLNT-D016`, gồm Quyết định chốt Cổng G1 `QLNT-D015`, nguyên tắc **`$0 First`** `QLNT-D014` và nguyên tắc **Thư viện cục bộ / Chưa kết nối bên thứ 3** `QLNT-D016`).
   - `04-van-hanh/HA_TANG_VA_VAN_HANH_HE_THONG.md` & `04-van-hanh/QUALITY_AND_RELEASE.md` (Chuẩn vận hành & hạ tầng cho Dev bám theo).
   - Bộ hồ sơ thiết kế Sprint 1 đã hoàn thành 100% tại `02-nghiep-vu/` và `03-ky-thuat/`.
 
@@ -15,11 +15,11 @@
 
 ## 1. Mục tiêu Cốt lõi & 5 Đầu ra Đo lường được của Sprint 2
 
-> **Mục tiêu Sprint 2:** Chuyển hóa toàn bộ thiết kế đã chốt ở Cổng G1 thành **Prototype P1 chạy thực tế trên trình duyệt Web & Mobile (`390x844`)** với chi phí hạ tầng **`$0` (`Local-First IndexedDB` + `Cloudflare Pages Free`)**, hiện thực hóa kiến trúc tách tầng **`Headless Core` $\leftrightarrow$ `IGameRenderer`**, khung cảnh **3D Isometric cố định** và luồng thao tác **Sổ quản lý ảo F04 chế độ `Single-Page`** (Thu tiền VietQR/Duyệt bill, Quản lý thiết bị/Báo hỏng chấm than đỏ, Lịch sử & Điểm thưởng).
+> **Mục tiêu Sprint 2:** Chuyển hóa toàn bộ thiết kế đã chốt ở Cổng G1 thành **Prototype P1 chạy thực tế trên trình duyệt Web & Mobile (`390x844`)** với chi phí hạ tầng **`$0` và `0` kết nối bên thứ 3 (`Local-First IndexedDB` + `Local Vite Preview Server` + thư viện cục bộ)**, hiện thực hóa kiến trúc tách tầng **`Headless Core` $\leftrightarrow$ `IGameRenderer`**, khung cảnh **3D Isometric cố định** và luồng thao tác **Sổ quản lý ảo F04 chế độ `Single-Page`** (Thu tiền VietQR sinh bằng thư viện cục bộ/Duyệt bill, Quản lý thiết bị/Báo hỏng chấm than đỏ, Lịch sử & Điểm thưởng).
 
 ### 5 Đầu ra Đo lường được (Measurable Deliverables):
 1. **Khung Codebase & Môi trường Thực thi (`Tech` — giải quyết dứt điểm Issue `#3`):**
-   - Khởi tạo cấu trúc mã nguồn chuẩn trong repo `4.Du_an/QLNT` (`Vite` + `TypeScript` + `Three.js` + `Tailwind CSS`), cấu hình build tự động không lỗi, đạt tốc độ tải nhanh và triển khai bản xem thử miễn phí (`$0`).
+   - Khởi tạo cấu trúc mã nguồn chuẩn trong repo `4.Du_an/QLNT` (`Vite` + `TypeScript` + `Three.js` + `Tailwind CSS`), cấu hình build tự động không lỗi, chạy thử cục bộ (`$0`, không kết nối dịch vụ bên thứ 3).
 2. **Tầng Nghiệp vụ & Dữ liệu Local-First (`Tech` + `BA`):**
    - Hoàn thiện `Headless Core` và `IndexedDB Adapter` (`$0`, hoạt động 100% cả khi offline), tích hợp bộ dữ liệu mẫu (`Seed Data` 1 tòa nhà 3 tầng, 12 phòng tại Hà Nội), công thức tính tiền điện/nước bậc thang/đồng giá chuẩn xác 100%, và cơ chế tách bạch `Preview State` (hiệu ứng game) $\leftrightarrow$ `Commit State` (ghi dữ liệu thật).
 3. **Cảnh 3D Isometric & Sổ Quản lý Ảo F04 `Single-Page` (`Tech` + `UX`):**
@@ -118,7 +118,7 @@ Ngay khi Chủ dự án phê duyệt Kế hoạch Sprint 2, PM Lead (hoặc ngư
 
 | Mã Kế hoạch | Tên Task (Sẽ tạo trong repo `theGonlyK/QLNT`) | Vai trò thực hiện | Phụ thuộc | Độ ưu tiên Gốc $\rightarrow$ Thực tế (`Rule 10`) | Đầu ra & Tiêu chí Hoàn thành (DoD) |
 | :---: | :--- | :--- | :---: | :---: | :--- |
-| **`S2-TECH-05`** | **[Tech] Tích hợp Luồng Thu tiền (`VietQR động`, Tải ảnh Bill, Duyệt 1 chạm) & Báo hỏng/Bảo trì trên Sổ F04** | `Tech Contributor` | `S2-TECH-03`, `S2-TECH-04`, `S2-MKT-01` | `Cao` | • Chạy thông suốt luồng: Chốt điện/nước $\rightarrow$ tính tổng tự động $\rightarrow$ sinh mã VietQR $\rightarrow$ tải ảnh chứng từ $\rightarrow$ Chủ trọ bấm duyệt $\rightarrow$ tắt Chấm than vàng & cộng điểm thưởng.<br>• Báo hỏng thiết bị $\rightarrow$ bật Chấm than đỏ $\rightarrow$ hoàn tất bảo trì $\rightarrow$ tắt Chấm than đỏ & ghi lịch sử Trang 3. |
+| **`S2-TECH-05`** | **[Tech] Tích hợp Luồng Thu tiền (`VietQR` bằng thư viện cục bộ, Tải ảnh Bill local, Duyệt 1 chạm) & Báo hỏng/Bảo trì trên Sổ F04** | `Tech Contributor` | `S2-TECH-03`, `S2-TECH-04`, `S2-MKT-01` | `Cao` | • Chạy thông suốt luồng: Chốt điện/nước $\rightarrow$ tính tổng tự động $\rightarrow$ sinh mã **VietQR hoàn toàn cục bộ qua thư viện EMVCo/NAPAS 247 (không gọi API ngoài)** $\rightarrow$ lưu ảnh chứng từ vào `IndexedDB` $\rightarrow$ Chủ trọ bấm duyệt $\rightarrow$ tắt Chấm than vàng & cộng điểm thưởng.<br>• Báo hỏng thiết bị $\rightarrow$ bật Chấm than đỏ $\rightarrow$ hoàn tất bảo trì $\rightarrow$ tắt Chấm than đỏ & ghi lịch sử Trang 3. |
 | **`S2-BA-02`** | **[BA] Kiểm tra Đối chiếu Nghiệp vụ trên Prototype P1 theo 21 Tiêu chí Nghiệm thu (`AC-01..AC-21`)** | `BA Lead` & `BA Agent` | `S2-TECH-05` | `Cao` | • Biên bản đối chiếu từng tiêu chí `AC-01` đến `AC-21` trong `MA_TRAN_TRUY_VET_P1.md` trên bản chạy thật; xác nhận không sai lệch công thức tiền trọ/cọc/điện nước. |
 | **`S2-QA-02`** | **[QA] Thực thi Kiểm thử 12 Kịch bản `TC-P1-01..12` trên Trình duyệt Thật & Lập Báo cáo Kiểm thử Sprint 2** | `QA Lead` & `QA Agent` | `S2-TECH-05`, `S2-UX-01`, `S2-QA-01` | `Cao` | • Chạy kiểm thử toàn bộ `TC-P1-01..TC-P1-12` trên Prototype (gồm cả chế độ giả lập Mobile `390x844`), cập nhật kết quả `Pass/Fail` thực tế vào `04-van-hanh/` và kiểm tra điều kiện môi trường STG. |
 | **`S2-KG-01`** | **[Knowledge Governance] Đánh giá Chất lượng Cuối Sprint 2, Cập nhật `IMPROVEMENTS.md` & Chuẩn bị Rà soát Tri thức Đợt 2** | `Knowledge Governance Lead` | `S2-BA-02`, `S2-QA-02` | `Trung bình` | • Báo cáo đánh giá kết quả Sprint 2 so với mục tiêu, cập nhật `04-van-hanh/IMPROVEMENTS.md` và chuẩn bị danh mục tri thức rút trích sau khi Prototype P1 chạy thực tế. |
@@ -126,10 +126,12 @@ Ngay khi Chủ dự án phê duyệt Kế hoạch Sprint 2, PM Lead (hoặc ngư
 
 ---
 
-## 4. Nguyên tắc Hạ tầng & Chi phí Áp dụng Nghiêm ngặt trong Sprint 2 (`QLNT-D014`)
+## 4. Nguyên tắc Hạ tầng, Thư viện & Chi phí Áp dụng Nghiêm ngặt trong Sprint 2 (`QLNT-D014`, `QLNT-D016`)
 
-1. **Chi phí hạ tầng Sprint 2 = `$0` tuyệt đối:**
-   - Toàn bộ quá trình phát triển và chạy thử Prototype P1 trong Sprint 2 sử dụng **`IndexedDB` (Local-First ngay trên trình duyệt)** kết hợp **`Cloudflare Pages Free`** (hoặc chạy trực tiếp qua Vite Dev/Preview Server), không phát sinh bất kỳ chi phí thuê VPS hay Database trả phí nào.
-   - Issue `#10` (`Cài đặt Docker / OrbStack`) được giữ ở mức **Tùy chọn (`Optional / Low Priority`)**, không bắt buộc cài đặt trong Sprint 2 để ưu tiên phương án nhẹ nhất, dễ chạy nhất trên máy trạm của Chủ dự án.
-2. **Mọi đề xuất thay đổi làm tăng/giảm chi phí:**
+1. **Chi phí hạ tầng Sprint 2 = `$0` & Sử dụng 100% Thư viện cục bộ (`QLNT-D016`):**
+   - Toàn bộ tính năng (bao gồm **sinh mã VietQR chuẩn EMVCo/NAPAS 247**, **lưu trữ dữ liệu `IndexedDB`**, **đồ họa 3D/2D**) phải sử dụng **thư viện cài đặt cục bộ** và chạy trên **Vite Dev/Preview Server cục bộ**, tuyệt đối **chưa kết nối đến bất kỳ dịch vụ/API bên thứ 3 nào** (như `img.vietqr.io`, API ngân hàng, Supabase Cloud, Cloudflare Pages/R2).
+   - Issue `#10` (`Cài đặt Docker / OrbStack`) giữ ở mức **Tùy chọn (`Optional / Low Priority`)**, không bắt buộc cài đặt trong Sprint 2 để ưu tiên phương án nhẹ nhất, dễ chạy nhất.
+2. **Cơ chế Bắt buộc Báo Chủ dự án Confirm khi Cần Kết nối Bên thứ 3:**
+   - Nếu trong quá trình thực hiện có bất kỳ Issue hoặc Task nào **bắt buộc phải kết nối đến dịch vụ bên thứ 3 mới thực hiện được** (ví dụ: triển khai URL Staging ra ngoài qua Cloudflare Pages, kết nối Supabase Cloud/R2, đối soát ngân hàng tự động), người phụ trách phải **tạm dừng phần kết nối đó và báo Chủ dự án confirm trước**.
+3. **Mọi đề xuất thay đổi làm tăng/giảm chi phí:**
    - Phải thực hiện đánh giá lại đồng thời 2 chiều (**Cấu trúc hạ tầng** + **Phạm vi triển khai**) tại `04-van-hanh/` và trình Chủ dự án phê duyệt trước khi áp dụng.

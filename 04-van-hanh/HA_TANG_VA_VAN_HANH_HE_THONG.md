@@ -1,9 +1,9 @@
 # Hồ sơ Hạ tầng Máy chủ, Cloud & Chuẩn Vận hành Thực thi cho Dev — QLNT
 
 - **Dự án:** Quản lý nhà trọ (QLNT)
-- **Mã quyết định phê duyệt:** `QLNT-D013`, `QLNT-D014` (`01-quan-ly/DECISIONS.md`)
+- **Mã quyết định phê duyệt:** `QLNT-D013`, `QLNT-D014`, `QLNT-D016` (`01-quan-ly/DECISIONS.md`)
 - **Đơn vị quản lý:** Mảng C (Quản lý vận hành — `04-van-hanh/`) phối hợp Tech Lead & PM Lead
-- **Ngày ban hành:** 2026-11-12
+- **Ngày ban hành:** 2026-11-12 (Cập nhật `QLNT-D016`: `2026-11-13`)
 - **Trạng thái:** **`Đã phê duyệt — Tài liệu chuẩn bắt buộc cho các Dev và QA bám theo thực hiện`**
 
 ---
@@ -13,11 +13,15 @@
 1. **Chuẩn tham chiếu duy nhất cho Dev:** Tài liệu này là chuẩn tham chiếu bắt buộc về hạ tầng, môi trường triển khai, cấu hình máy chủ/Cloud, bảo mật dữ liệu vận hành và ngưỡng hiệu năng của dự án QLNT. Toàn bộ thành viên kỹ thuật (`Tech Lead`, `Tech Contributor / Dev`, `QA`) bám sát nội dung tại thư mục `04-van-hanh/` trong suốt quá trình lập trình, kiểm thử và triển khai.
 2. **Nguyên tắc Tối ưu Chi phí ("Ưu tiên Dễ & Không mất phí — `$0 First`"):**
    - **Ưu tiên tuyệt đối các phương án dễ triển khai (Zero-Ops / Low-Ops) và hoàn toàn miễn phí (`$0/tháng`)** trong mọi quyết định thiết kế kỹ thuật và vận hành.
-   - Duy trì vận hành trên **Giai đoạn 1 (`$0/tháng` — Free Tier của Cloudflare Pages + Supabase + Cloudflare R2 + Local-First `IndexedDB`)** lâu nhất có thể, kể cả trong giai đoạn chạy thử nghiệm thực tế (Pilot) chừng nào tài nguyên thực dùng vẫn nằm trong hạn mức miễn phí sau khi đã tối ưu kỹ thuật.
+   - Duy trì vận hành trên **Giai đoạn 1 (`$0/tháng` — Local-First `IndexedDB` và Free Tier khi được duyệt kết nối Cloud)** lâu nhất có thể, kể cả trong giai đoạn chạy thử nghiệm thực tế (Pilot) chừng nào tài nguyên thực dùng vẫn nằm trong hạn mức miễn phí sau khi đã tối ưu kỹ thuật.
 3. **Cơ chế Bắt buộc Đánh giá lại khi có Đề xuất Tăng hoặc Giảm Chi phí:**
    - Mọi đề xuất thay đổi làm **tăng chi phí** (chuyển sang thuê VPS, mua thêm dung lượng, nâng gói Cloud) hoặc **giảm chi phí** đều **bắt buộc phải thực hiện đánh giá lại trên cả 2 khía cạnh** trước khi trình Chủ dự án:
-     1. **Đánh giá lại Cấu trúc Hạ tầng (Infrastructure Re-architecture):** Kiểm tra xem có thể tối ưu kiến trúc (đẩy xử lý/lưu trữ về `IndexedDB` phía Client, tăng tỷ lệ Cache trên Cloudflare CDN, nén ảnh/model 3D mạnh hơn, hoặc kết hợp các dịch vụ Free Tier khác) để tiếp tục giữ chi phí **$0** và vận hành đơn giản hay không.
+     1. **Đánh giá lại Cấu trúc Hạ tầng (Infrastructure Re-architecture):** Kiểm tra xem có thể tối ưu kiến trúc (đẩy xử lý/lưu trữ về `IndexedDB` phía Client, tăng tỷ lệ Cache, nén ảnh/model 3D mạnh hơn, hoặc kết hợp các dịch vụ Free Tier khác) để tiếp tục giữ chi phí **$0** và vận hành đơn giản hay không.
      2. **Đánh giá lại Phạm vi Triển khai (Deployment Scope Re-evaluation):** Rà soát xem phạm vi tính năng hoặc đối tượng sử dụng nào đang gây tốn tài nguyên (ví dụ: giới hạn số lượng ảnh bill lưu trữ dài hạn, tự động xóa ảnh bill tạm sau `N` ngày kể từ khi chủ nhà đã duyệt thu tiền xong, hoặc chỉ bật đồng bộ Realtime cho các tác vụ thực sự cần thiết) để điều chỉnh phạm vi phù hợp với mức chi phí mục tiêu.
+4. **Nguyên tắc Sử dụng Thư viện Cục bộ & Chưa Kết nối Bên thứ 3 (`QLNT-D016` — Bắt buộc):**
+   - Trong giai đoạn hiện tại (Prototype P1 / Sprint 2), mọi tính năng muốn sử dụng đều phải triển khai qua **thư viện cài đặt cục bộ** (`Client-side / Local Libraries`), **tuyệt đối CHƯA kết nối đến bất kỳ API hoặc dịch vụ bên thứ 3 nào**.
+   - **Áp dụng cụ thể cho VietQR:** Bắt buộc dùng **thư viện cục bộ chuẩn EMVCo / NAPAS 247** kết hợp thư viện tạo mã QR offline ngay trên trình duyệt; **KHÔNG gọi `img.vietqr.io` hay API ngân hàng bên thứ 3**.
+   - **Quy tắc báo cáo trước khi kết nối:** Nếu có bất kỳ Issue hoặc Task nào **bắt buộc phải kết nối dịch vụ bên thứ 3 mới thực hiện được** (như deploy lên Cloudflare Pages/R2, kết nối Supabase Cloud, webhook đối soát ngân hàng tự động F04.5, Zalo OA/ZNS), **phải báo Chủ dự án confirm trước khi thực hiện**.
 
 ---
 
