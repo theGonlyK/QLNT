@@ -88,7 +88,7 @@ flowchart TD
 
 ## 3. Danh sách Chi tiết 15 Task của Sprint 2 (Sắp xếp theo Độ ưu tiên & Khả năng Chạy Song song)
 
-Ngay khi Chủ dự án phê duyệt Kế hoạch Sprint 2, PM Lead sẽ khởi tạo **15 GitHub Issues chính thức trong repository `theGonlyK/QLNT`** (tương ứng `#49` $\rightarrow$ `#63`) và đưa vào **GitHub Project `#2`** theo đúng cấu trúc dưới đây:
+Ngay khi Chủ dự án phê duyệt Kế hoạch Sprint 2, PM Lead (hoặc người phụ trách kỹ thuật được ủy quyền) sẽ khởi tạo **15 GitHub Issues chính thức trong repository `theGonlyK/QLNT`** (từ `#52` trở đi) và đưa vào **GitHub Project `#2`** theo đúng cấu trúc dưới đây:
 
 ### Nhóm A — Các Task Độc lập (`Zero-Dependency`) & Task Chặn Đường găng (Khởi chạy đồng loạt ngay khi mở Sprint 2)
 
@@ -99,7 +99,7 @@ Ngay khi Chủ dự án phê duyệt Kế hoạch Sprint 2, PM Lead sẽ khởi 
 | **`S2-BA-01`** | **[BA] Xây dựng Bộ dữ liệu mẫu chuẩn Hà Nội (`Seed Data JSON`) & Bảng kiểm công thức Điện/Nước** | `BA Lead` & `BA Agent` | **Không (`0`)** | `Cao` $\rightarrow$ **`Cao (Chạy ngay khi Agent trống)`** | • File `src/core/seed/hanoi_motel_seed.json` (1 tòa nhà 3 tầng, 12 phòng, đủ các trạng thái: phòng trống, đang ở, nợ tiền, báo hỏng thiết bị, lịch sử giao dịch).<br>• Bộ test vector kiểm chứng công thức tính tiền điện/nước bậc thang & đồng giá. |
 | **`S2-3D-01`** | **[3D Artist] Thiết lập môi trường 3D (`#6`) & Sinh gói model `.glb` mẫu (`sand3d` + `Kenney CC0`)** | `3D Artist Lead` & `3D Agent` | **Không (`0`)** | `Trung bình` $\rightarrow$ **`Cao (Chạy ngay khi Agent trống)`** | • Xử lý Issue `#6` (kiểm tra/cài đặt công cụ hoặc xuất `.glb` chuẩn từ `sand3d`/procedural script & gói mẫu `Kenney CC0`).<br>• Bàn giao model `.glb` nhẹ (`< 1.500–3.000 tris`) vào `public/models/` kèm báo cáo polycount. |
 | **`S2-QA-01`** | **[QA] Xử lý công cụ đọc biểu mẫu (`#5`) & Chuẩn bị Bộ dữ liệu/Script Kiểm thử tự động `TC-P1-01..12`** | `QA Lead` & `QA Agent` | **Không (`0`)** | `Trung bình` $\rightarrow$ **`Trung bình (Chạy ngay khi Agent trống)`** | • Xử lý Issue `#5` (cài đặt `openpyxl` trong `.venv` hoặc script chuyển đổi chuẩn X02).<br>• Tạo bộ kịch bản kiểm thử thực thi cho 12 Test Cases `TC-P1-01..12`. |
-| **`S2-MKT-01`** | **[Marketing] Lập kế hoạch đăng ký & phát hành App (`#49` - đã mở) & Chuẩn hóa bộ văn bản giao tiếp trong Game** | `Marketing Lead` & `Marketing Agent` | **Không (`0`)** | `Trung bình` $\rightarrow$ **`Trung bình (Chạy ngay khi Agent trống)`** | • Hoàn thành `01-quan-ly/KE_HOACH_DANG_KY_VA_PHAT_HANH_APP.md` (xử lý Issue `#49`).<br>• Bộ copywriting thân thiện, không gây áp lực tiêu cực cho khách thuê (nhắc tiền, duyệt bill, thông báo bảo trì) để nạp vào UI Sổ F04. |
+| **`S2-MKT-01`** | **[Marketing] Chuẩn hóa bộ văn bản giao tiếp trong Game (kế thừa `#49` đã hoàn thành)** | `Marketing Lead` & `Marketing Agent` | **Không (`0`)** | `Trung bình` $\rightarrow$ **`Trung bình (Chạy ngay khi Agent trống)`** | • Kế thừa `01-quan-ly/KE_HOACH_DANG_KY_VA_PHAT_HANH_APP.md` (`#49` đã `Done`).<br>• Bộ copywriting thân thiện, không gây áp lực tiêu cực cho khách thuê (nhắc tiền, duyệt bill, thông báo bảo trì) để nạp vào UI Sổ F04. |
 
 ---
 
