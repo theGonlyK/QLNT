@@ -6,7 +6,7 @@
 - **Dự án:** Quản lý nhà trọ (QLNT)
 - **Tác giả:** Họa sĩ Thiết kế 2D (2D Visual / Game UI Artist) phối hợp Tech Lead & UX
 - **Ngày ban hành:** 2026-11-13
-- **Trạng thái:** `Dự thảo trình duyệt (Chờ Người Dùng Xác Nhận)`
+- **Trạng thái:** `Đã hoàn thành và nghiệm thu (2026-11-13)` — Đạt 28/28 tests across 6 test suites, 0 lỗi typecheck/build.
 - **Tài liệu căn cứ:**
   - `03-ky-thuat/QUY_CHUAN_2D_VA_BRIEF_ASSET_3D.md` (Quy chuẩn kích thước SVG < 50KB, vùng chạm >= 44x44px, Billboard 512x512/1024x1024, pivot 0.5, 0.0)
   - `02-nghiep-vu/DAC_TA_SO_QUAN_LY_AO_SINGLE_PAGE_VA_RENDERER.md` (Sổ quản lý F04, Mặt bằng 2D, Single-Page 3 trang)
