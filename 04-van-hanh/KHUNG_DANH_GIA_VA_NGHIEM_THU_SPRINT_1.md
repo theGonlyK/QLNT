@@ -2,12 +2,12 @@
 
 - **Dự án:** Quản lý nhà trọ (QLNT)
 - **Thực hiện:** Knowledge Governance Lead & Agent phối hợp PM Lead và 8 Team Lead
-- **Ngày ban hành:** 2026-11-12 (Cập nhật Biên bản Sign-off Cổng G1: `2026-11-13`)
-- **Trạng thái:** `9/9 Lead đã xác nhận ĐỦ ĐIỀU KIỆN — Trình Chủ dự án phê duyệt chốt Cổng G1`
+- **Ngày ban hành:** 2026-11-12 (Cập nhật Biên bản Chốt Cổng G1: `2026-11-13`)
+- **Trạng thái:** **`ĐÃ CHỐT CỔNG G1 (2026-11-13 — QLNT-D015)`** — 9/9 Lead xác nhận đủ điều kiện; Chủ dự án đã phê duyệt chuyển pha Xây dựng (`Sprint 2`).
 - **Căn cứ tham chiếu:**
   - `3.DOC_AI/quan-tri/MO_HINH_VAN_HANH.md` (Quy định Cổng G1 — Yêu cầu & Thiết kế sẵn sàng)
   - `3.DOC_AI/quan-tri/RULES_CORE.md` (Quy tắc 1–10)
-  - `01-quan-ly/DECISIONS.md` (`QLNT-D001` $\rightarrow$ `QLNT-D014`)
+  - `01-quan-ly/DECISIONS.md` (`QLNT-D001` $\rightarrow$ `QLNT-D015`)
   - `01-quan-ly/HO_SO_DIEU_PHOI_SPRINT_1_VA_QUY_MO_HA_TANG.md`
 
 ---
@@ -58,3 +58,16 @@ Theo chỉ đạo của Chủ dự án, 4 Issue liên quan đến cài đặt c�
 - `ISS-05` (`#5`): Cài đặt thư viện Python (`openpyxl`, `pandas`) đọc trực tiếp file Excel `.xlsx`.
 - `ISS-06` (`#6`): Cài đặt `Blender 4.x`, `Python >= 3.11 (bpy)` và `gltf-transform` cho pipeline `sand3d`.
 - `ISS-10` (`#10`): Cài đặt `Docker / OrbStack` và Cloud CLI trên máy trạm (tùy chọn khi cần chạy container local; ưu tiên phương án `$0 First` không bắt buộc phụ thuộc Docker ở đầu Sprint 2).
+
+---
+
+## 4. Biên bản Chốt Cổng G1 Chính thức (`Gate G1 Decision Record — QLNT-D015`)
+
+- **Thời điểm chốt:** `2026-11-13 16:38 (+07:00)`
+- **Người phê duyệt:** **Chủ dự án** (Thẩm quyền cao nhất) — Chỉ đạo: *"Đồng ý Chốt cổng G1, PM hãy lưu trữ và quản lý thông tin này"*.
+- **Quyết định lưu sổ:** `QLNT-D015` tại [`01-quan-ly/DECISIONS.md`](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/01-quan-ly/DECISIONS.md).
+- **Kết luận Quản trị:**
+  1. **Cổng G1 (`Yêu cầu & Thiết kế sẵn sàng`) chính thức `ĐẠT (PASSED)`** — đóng băng bộ hồ sơ thiết kế P1 (`02-nghiep-vu/`, `03-ky-thuat/`, `04-van-hanh/`) làm chuẩn tham chiếu xây dựng mã nguồn và asset.
+  2. **Toàn bộ 45/45 Task thiết kế & quản trị của Sprint 1** trong `theGonlyK/QLNT` đã hoàn tất, lưu vết và đóng (`CLOSED / Done`).
+  3. **Trạng thái bước tiếp theo:** Chuyển vòng đời sang **Pha Xây dựng (`Sprint 2`)**; PM giữ danh mục 15 Task Sprint 2 ở trạng thái chờ phê duyệt kế hoạch (`01-quan-ly/KE_HOACH_SPRINT_2_PROTOTYPE_P1.md`) trước khi kích hoạt thực thi.
+

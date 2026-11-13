@@ -3,11 +3,11 @@
 - **Dự án:** Quản lý nhà trọ (QLNT)
 - **Lập kế hoạch:** PM Lead phối hợp 8 Team Lead
 - **Ngày trình duyệt:** `2026-11-13`
-- **Trạng thái:** `Dự thảo trình Chủ dự án phê duyệt (Sau khi chốt Cổng G1)`
+- **Trạng thái:** `Cổng G1 ĐÃ CHỐT (QLNT-D015) — Dự thảo Kế hoạch Sprint 2 đang chờ Chủ dự án phê duyệt để khởi tạo 15 Task trên repo theGonlyK/QLNT`
 - **Repository quản lý Task & Code:** `theGonlyK/QLNT` (Đồng bộ 100% với GitHub Project `#2` theo `RULES_CORE.md` Mục 8)
 - **Căn cứ lập kế hoạch:**
   - `3.DOC_AI/quan-tri/RULES_CORE.md` (Đặc biệt **Mục 8**: Quản lý 100% task trong repo `QLNT` & lưu vết hoàn thành; **Mục 10**: Điều phối theo độ ưu tiên, tự động nâng độ ưu tiên khi chặn task phía sau, và chạy song song các task độc lập khi có Agent trống).
-  - `01-quan-ly/DECISIONS.md` (`QLNT-D001` $\rightarrow$ `QLNT-D014`, trọng tâm là nguyên tắc **Ưu tiên phương án dễ & không mất phí `$0 First`**).
+  - `01-quan-ly/DECISIONS.md` (`QLNT-D001` $\rightarrow$ `QLNT-D015`, gồm Quyết định chốt Cổng G1 `QLNT-D015` và nguyên tắc **Ưu tiên phương án dễ & không mất phí `$0 First`** `QLNT-D014`).
   - `04-van-hanh/HA_TANG_VA_VAN_HANH_HE_THONG.md` & `04-van-hanh/QUALITY_AND_RELEASE.md` (Chuẩn vận hành & hạ tầng cho Dev bám theo).
   - Bộ hồ sơ thiết kế Sprint 1 đã hoàn thành 100% tại `02-nghiep-vu/` và `03-ky-thuat/`.
 

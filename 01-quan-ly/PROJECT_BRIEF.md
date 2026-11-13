@@ -7,14 +7,14 @@
 - **Chủ dự án:** Người dùng (chủ workspace, thẩm quyền phê duyệt cao nhất)
 - **Người phụ trách mảng (tạm thời giai đoạn Khởi tạo):** Agent đề xuất kỹ thuật (Mảng B), chuẩn hóa nghiệp vụ (Mảng A) và lập kế hoạch vận hành (Mảng C); Người dùng xem xét và phê duyệt.
 - **Đội ngũ đi kèm từng mảng:** Agent hỗ trợ thực thi theo từng vai trò subagent
-- **Vòng đời/phạm vi đang thực hiện:** Khởi tạo (hoàn tất cổng Brief, chuyển sang Thiết kế kỹ thuật)
+- **Vòng đời/phạm vi đang thực hiện:** **Đã chốt Cổng G1 (`2026-11-13` — `QLNT-D015`)** — Hoàn tất 100% pha Thiết kế Sprint 1 (`45/45` Task hoàn thành); sẵn sàng chuyển sang pha **Xây dựng (`Sprint 2`: Khung Codebase & Prototype P1)** ngay khi Chủ dự án phê duyệt `KE_HOACH_SPRINT_2_PROTOTYPE_P1.md`.
 - **Mô hình triển khai:** SaaS Multi-tenant (nền tảng chung cho nhiều chủ nhà trọ độc lập, dùng chung bản đồ khu phố; dữ liệu phân tách theo từng chủ trọ)
 - **Đích đồ họa:** Thế giới game 3D với camera isometric cố định; không yêu cầu người dùng xoay camera tự do.
 - **Lộ trình đồ họa:** Xây dựng tăng dần qua prototype 3D đơn giản → MVP dùng hình khối và sprite 2D trong không gian 3D → thay dần bằng object 3D → hoàn thiện cảnh 3D theo từng khu vực. Phạm vi và độ trung thực đồ họa tăng theo giai đoạn, không thay toàn bộ engine giữa chừng.
 - **Kiến trúc:** Tách biệt tầng Dữ liệu/Nghiệp vụ (Headless Core) với tầng Hiển thị (Renderer Adapter); tạo renderer và hệ tọa độ 3D ngay từ nền tảng để giảm công sức chuyển đổi về sau.
 - **Client:** Web responsive + App mobile (đóng gói bằng Capacitor/PWA từ 1 codebase)
 - **Git repository:** `TEAM_ORCA/4.Du_an/QLNT` (nhánh `main`)
-- **Ngày cập nhật:** 2026-11-07
+- **Ngày cập nhật:** 2026-11-13
 
 ## Phạm vi
 
