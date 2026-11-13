@@ -1,7 +1,8 @@
 # Hồ sơ Hạ tầng Máy chủ, Cloud & Chuẩn Vận hành Thực thi cho Dev — QLNT
 
 - **Dự án:** Quản lý nhà trọ (QLNT)
-- **Mã quyết định phê duyệt:** `QLNT-D013`, `QLNT-D014` (`01-quan-ly/DECISIONS.md`)
+- **Mã quyết định phê duyệt:** `QLNT-D013`, `QLNT-D014` ([`../01-quan-ly/DECISIONS.md`](../01-quan-ly/DECISIONS.md))
+- **Chuẩn hóa kỹ thuật:** [`../03-ky-thuat/DANH_SACH_CAI_THIEN_VA_CHUAN_HOA_KY_THUAT.md`](../03-ky-thuat/DANH_SACH_CAI_THIEN_VA_CHUAN_HOA_KY_THUAT.md) (`TECH-STD-001`)
 - **Đơn vị quản lý:** Mảng C (Quản lý vận hành — `04-van-hanh/`) phối hợp Tech Lead & PM Lead
 - **Ngày ban hành:** 2026-11-12
 - **Trạng thái:** **`Đã phê duyệt — Tài liệu chuẩn bắt buộc cho các Dev và QA bám theo thực hiện`**
@@ -27,7 +28,7 @@
 
 | Giai đoạn | Quy mô phục vụ mục tiêu | Phương án Hạ tầng Chuẩn | Cấu hình Chi tiết (Compute / DB / Storage / Network) | Chi phí dự kiến |
 | :--- | :--- | :--- | :--- | :--- |
-| **Giai đoạn 1 (Mặc định - Ưu tiên số 1): Dev / STG / MVP & Pilot Nhỏ** | Nội bộ Team, QA, Demo & Pilot ban đầu (`1 – 50` chủ trọ sau khi tối ưu Local-First & nén ảnh) | **100% Free-Tier Managed Cloud (Cloudflare + Supabase + Local IndexedDB)**<br>*(Dễ nhất, không mất phí, không tốn công quản trị server)* | • **Frontend & 3D Assets CDN:** `Cloudflare Pages` (Miễn phí không giới hạn băng thông tĩnh, nén `Brotli`, `HTTP/3`, CDN PoP Việt Nam/Singapore cho file `.glb`, `.ktx2`, SVG).<br>• **Database, Auth & Realtime:** `Supabase Free Tier` (Region Singapore `ap-southeast-1`, `500MB` PostgreSQL 16 bật `Row-Level Security`, `200` kết nối Realtime WebSocket đồng thời).<br>• **Object Storage (Ảnh bill, CCCD, 3D động):** `Cloudflare R2 Free Tier` (Miễn phí `10GB/tháng`, **0đ phí băng thông Egress**, bắt buộc `Private Bucket + Signed URL`). | **`$0 / tháng`**<br>*(Không mất phí — Ưu tiên duy trì tối đa)* |
+| **Giai đoạn 1 (Mặc định - Ưu tiên số 1): Dev / STG / MVP & Pilot Nhỏ** | Nội bộ Team, QA, Demo & Pilot ban đầu (`1 – 50` chủ trọ sau khi tối ưu Local-First & nén ảnh) | **100% Free-Tier Managed Cloud (Cloudflare + Supabase + Local IndexedDB)**<br>*(Dễ nhất, không mất phí, không tốn công quản trị server)* | • **Frontend & 3D Assets CDN:** `Cloudflare Pages` (Miễn phí không giới hạn băng thông tĩnh, nén `Brotli`, `HTTP/3`, CDN PoP Việt Nam/Singapore cho file `.glb`, `.ktx2`, SVG).<br>• **Database, Auth & Realtime:** `Supabase Free Tier` (Region Singapore `ap-southeast-1`, `500MB` PostgreSQL 16 bật `Row-Level Security`, `200` kết nối Realtime WebSocket đồng thời).<br>• **Edge Compute:** `Cloudflare Workers` (100.000 requests/ngày miễn phí, xác thực JWT & ký Signed URL).<br>• **Object Storage (Ảnh bill, CCCD, 3D động):** `Cloudflare R2 Free Tier` (Miễn phí `10GB/tháng`, **0đ phí băng thông Egress**, bắt buộc `Private Bucket + Signed URL 15 phút`). | **`$0 / tháng`**<br>*(Không mất phí — Ưu tiên duy trì tối đa)* |
 | **Giai đoạn 2 (Chỉ mở khi vượt ngưỡng Free Tier sau khi đã tối ưu): Pilot Mở rộng Hà Nội** | `50 – 300` chủ nhà trọ<br>`1.500 – 6.000` phòng (`~10.000` cư dân) | **01 Cloud VPS tại Việt Nam + Cloudflare R2 & CDN**<br>*(Cần đánh giá lại hạ tầng & phạm vi trước khi bật)* | • **Máy chủ App & DB (01 Cloud VPS tại VN — độ trễ `< 15ms`):** **`4 vCPU, 8GB RAM, 100GB NVMe SSD`**, chạy `Docker Compose` (`Caddy Auto-SSL` + `Fastify/NestJS API` + `PostgreSQL 16` + `Redis 7`).<br>• **Object Storage & CDN:** `Cloudflare R2` (`10GB` đầu miễn phí, phần vượt `$0.015/GB`) + `Cloudflare CDN` miễn phí.<br>• **Sao lưu (Backup):** `Rclone / Cronjob` tự động nén & mã hóa bản dump PostgreSQL đẩy lên Cloudflare R2 mỗi ngày lúc `02:00 AM`. | **`~350.000đ – 600.000đ / tháng`**<br>*(Chỉ chi khi Chủ dự án duyệt)* |
 | **Giai đoạn 3 (Tương lai): Mở rộng Thương mại SaaS** | `1.000 – 3.000` chủ trọ<br>`> 25.000` phòng (`2.000+ CCU`) | **Cụm HA tách biệt App Node & Database Node**<br>*(Đánh giá theo doanh thu thực tế)* | • **App & Realtime Cluster:** `02 VPS (4 vCPU, 8GB RAM)` đặt sau `Cloudflare Load Balancer`.<br>• **Dedicated Database Node:** `01 VPS (4 vCPU, 16GB RAM, 250GB NVMe RAID)` chuyên chạy PostgreSQL + Redis.<br>• **Storage & CDN:** `Cloudflare R2 + CDN`. | **`~1.500.000đ – 2.500.000đ / tháng`** |
 
@@ -38,8 +39,8 @@
 ```mermaid
 flowchart LR
     subgraph LOCAL ["1. Local Dev (Máy trạm Dev)"]
-        L1["Vite + Three.js + TypeScript"]
-        L2["IndexedDB (Dexie.js - Gói Miễn phí Offline)"]
+        L1["Vite 6 + React 19 + Three.js"]
+        L2["IndexedDB (Dexie.js - Local-First & Outbox Queue)"]
         L3["Docker Compose: Postgres 16 + Redis + MinIO/Supabase Local"]
     end
 
@@ -47,13 +48,13 @@ flowchart LR
         S1["GitHub Actions CI/CD (Build + Lint + Typecheck)"]
         S2["Cloudflare Pages Preview HTTPS URL"]
         S3["Supabase STG (Mock Data, không chứa CCCD thật)"]
-        S4["Cloudflare R2 STG Bucket (Private Signed URL)"]
+        S4["Cloudflare R2 STG Bucket (Private Signed URL 15p)"]
     end
 
     subgraph PROD ["3. Production (PROD - Pilot Hà Nội)"]
         P1["Cloudflare CDN + Web / Capacitor Mobile App"]
         P2["VPS Việt Nam (4 vCPU, 8GB RAM, 100GB NVMe - Docker Compose)"]
-        P3["Cloudflare R2 PROD (Signed URL + Daily DB Backup 02:00 AM)"]
+        P3["Cloudflare R2 PROD (Signed URL 15p + Daily DB Backup 02:00 AM)"]
     end
 
     LOCAL -->|"Pull Request + Tech Lead Review"| STG
@@ -65,7 +66,8 @@ flowchart LR
 ## 4. Kế hoạch Triển khai 4 Bước (Roadmap Thực thi Hạ tầng)
 
 1. **Bước 1 — Thiết lập Chuẩn Codebase trong Sprint 1:**
-   - Dev thiết kế tầng dữ liệu theo mẫu **Repository / Storage Adapter**: hỗ trợ song song `IndexedDB (Dexie.js)` cho gói Miễn phí (Offline-first) và `PostgreSQL / Supabase` cho gói Trả phí (SaaS Multi-tenant).
+   - Dev thiết kế tầng dữ liệu theo mẫu **Repository / Storage Adapter**: hỗ trợ song song `IndexedDB (Dexie.js)` cho bản Offline-first và `PostgreSQL / Supabase` cho SaaS Multi-tenant.
+   - Triển khai hàng đợi mutation `outbox_mutations` phía client để đồng bộ ngầm khi có mạng.
    - Tuyệt đối không viết cứng (hardcode) logic nghiệp vụ vào Database Trigger của nhà cung cấp Cloud để đảm bảo chuyển đổi từ Giai đoạn 1 (Supabase) sang Giai đoạn 2 (VPS Docker tại Việt Nam) không phải sửa code nghiệp vụ.
 2. **Bước 2 — Dựng môi trường Staging (STG) tự động (`$0/tháng`):**
    - Thiết lập `.github/workflows/ci-staging.yml` trên repo `theGonlyK/QLNT`: mỗi Pull Request vào nhánh `main`/`staging` tự động chạy `typecheck`, `lint`, `unit test` và deploy bản Preview HTTPS lên `Cloudflare Pages`.
@@ -74,7 +76,7 @@ flowchart LR
    - Đóng gói chuẩn bộ `docker-compose.prod.yml` gồm: `caddy`, `api`, `postgres`, `redis`, `backup-cron`.
    - Khởi tạo 01 VPS Việt Nam (`4 vCPU / 8GB RAM / 100GB NVMe`), trỏ DNS qua Cloudflare và kết nối bucket Cloudflare R2.
 4. **Bước 4 — Nghiệm thu Môi trường theo Checklist `X02`:**
-   - QA Lead và Tech Lead kiểm tra toàn bộ danh mục trong `1.Bieu_Mau/1. Test cases/3. Checklist/X02_Checklist_Check Enviroment (STG) Before build.xlsx` trước khi trình Chủ dự án duyệt Cổng G3.
+   - QA Lead và Tech Lead kiểm tra toàn bộ danh mục trong [`../../../1.Bieu_Mau/1. Test cases/3. Checklist/X02_Checklist_Check Enviroment (STG) Before build.xlsx`](../../../1.Bieu_Mau/1.%20Test%20cases/3.%20Checklist/X02_Checklist_Check%20Enviroment%20(STG)%20Before%20build.xlsx) trước khi trình Chủ dự án duyệt Cổng G3.
 
 ---
 
@@ -82,11 +84,16 @@ flowchart LR
 
 ### 5.1. Bảo mật Dữ liệu Đa Chủ trọ (Multi-tenant Isolation & Privacy)
 1. **Cách ly dữ liệu theo `landlord_id` (Bắt buộc 100% bảng):**
-   - Mọi bảng dữ liệu nghiệp vụ (`buildings`, `floors`, `rooms`, `tenants`, `contracts`, `devices`, `invoices`, `room_logs`) phải có cột `landlord_id` và bật **Row-Level Security (RLS)** hoặc Middleware kiểm tra quyền sở hữu ở tầng API.
-2. **Bảo mật ảnh chụp nhạy cảm (Ảnh Bill chuyển khoản & CCCD khách thuê):**
+   - Mọi bảng dữ liệu nghiệp vụ (`properties`, `rooms`, `tenants`, `contracts`, `billings`, `payment_records`, `meter_readings`, `room_audit_logs`, `maintenance_requests`) phải có cột `landlord_id` và bật **Row-Level Security (RLS)** hoặc Middleware kiểm tra quyền sở hữu ở tầng API.
+2. **Bảo mật ảnh chụp nhạy cảm (Ảnh Bill chuyển khoản & CCCD khách thuê qua Cloudflare Worker + R2):**
    - Tuyệt đối **KHÔNG** lưu ảnh bill và ảnh CCCD trong `Public Bucket`.
-   - Bắt buộc upload vào **Private Bucket** trên Cloudflare R2 / Supabase Storage và chỉ trả về **Signed URL có thời hạn tối đa 15 phút (`900 giây`)** cho đúng chủ nhà hoặc khách của phòng đó.
-   - Перед khi upload từ điện thoại, Client phải nén ảnh xuống định dạng `WebP/JPEG` (chiều ngang tối đa `1280px`, dung lượng `< 300KB`) để tiết kiệm băng thông 4G và dung lượng lưu trữ.
+   - Bắt buộc upload vào **Private Bucket** trên Cloudflare R2 (`$0/tháng`, 10GB miễn phí, 0đ egress).
+   - **Cơ chế ký URL qua Cloudflare Worker / Edge Function:**
+     - Client gửi yêu cầu kèm Bearer JWT đến Edge Worker (`GET/POST /api/media/signed-url`).
+     - Worker giải mã JWT, xác thực quyền sở hữu (`landlord_id` hoặc `tenant_id` của chính phòng đó).
+     - Worker sử dụng AWS SDK S3 Presigner tạo **Signed URL có thời hạn sống đúng 15 phút (`900 giây`)**.
+     - Trình duyệt/Client upload hoặc tải ảnh trực tiếp qua URL đã ký, hết hạn URL sẽ tự động vô hiệu hóa.
+   - **Tối ưu dung lượng Client:** Trước khi upload từ điện thoại, Client bắt buộc nén ảnh xuống định dạng `WebP/JPEG` (chiều ngang tối đa `1280px`, dung lượng `< 300KB`) để tiết kiệm băng thông 4G và dung lượng lưu trữ R2.
 3. **Tuân thủ nguyên tắc riêng tư `NT-05` và `NT-06`:**
    - API công khai cho Bản đồ tìm phòng (`F06`) và Sale trọ (`F03`) chỉ trả về các trường của **phòng đang trống (`EMPTY`)**, tuyệt đối lọc bỏ ở tầng Backend mọi thông tin cá nhân khách đang thuê, số điện/nước thực tế và lịch sử hóa đơn.
 
@@ -104,4 +111,34 @@ flowchart LR
 1. **Nhánh làm việc:** Mỗi task trên Orca / GitHub Project `#2` phải thực hiện trên nhánh riêng theo quy ước: `feat/<role>-<task-id>-<mo-ta-ngan>` hoặc `fix/<issue-id>-<mo-ta>`.
 2. **Điều kiện gộp nhánh (Merge Gate):**
    - Đảm bảo tách biệt hoàn toàn giữa `packages/domain-core` (không import `three` hay DOM) và `packages/renderer-3d` (giao tiếp qua `IGameRenderer`).
-   - Pass 100% kiểm tra `typecheck`, `lint` và đối chiếu với đặc tả trong `02-nghiep-vu/DAC_TA_SO_QUAN_LY_AO_SINGLE_PAGE_VA_RENDERER.md`.
+   - Pass 100% kiểm tra `typecheck`, `lint` và đối chiếu với đặc tả trong [`../02-nghiep-vu/DAC_TA_SO_QUAN_LY_AO_SINGLE_PAGE_VA_RENDERER.md`](../02-nghiep-vu/DAC_TA_SO_QUAN_LY_AO_SINGLE_PAGE_VA_RENDERER.md).
+
+### 5.4. Cơ chế Đồng bộ Local-First (IndexedDB Outbox Queue $\leftrightarrow$ Supabase Free Sync)
+1. **Kiến trúc Local-First Phía Trình Duyệt:**
+   - Dữ liệu nghiệp vụ được lưu trữ đầy đủ trong **IndexedDB (Dexie.js)** của thiết bị người dùng. Ứng dụng luôn đọc và hiển thị dữ liệu trực tiếp từ IndexedDB, bảo đảm tốc độ phản hồi tính bằng mili-giây và hoạt động ổn định ngay cả khi mất sóng.
+2. **Hàng đợi Outbox Mutation (`outbox_mutations`):**
+   - Mọi hành động thêm/sửa/xóa (nhập chỉ số điện nước, cập nhật người ở, duyệt bill thu tiền) được ghi đồng thời vào bảng dữ liệu cục bộ và bảng hàng đợi `outbox_mutations` với cấu trúc:
+     ```typescript
+     interface OutboxMutation {
+       id: string; // UUID v4
+       entity_table: string; // 'billings', 'meter_readings', etc.
+       operation: 'INSERT' | 'UPDATE' | 'DELETE';
+       payload: Record<string, unknown>;
+       client_timestamp: string; // ISO 8601 UTC
+       status: 'PENDING' | 'RETRYING' | 'SYNCED' | 'FAILED';
+       retry_count: number;
+       error_message?: string;
+     }
+     ```
+   - Giao diện người dùng áp dụng **Optimistic Update**: cập nhật hiển thị ngay lập tức mà không cần chờ Cloud phản hồi.
+3. **Tiến trình Đồng bộ Nền (Background Sync Worker):**
+   - Worker lắng nghe sự kiện `online` của trình duyệt hoặc chu kỳ kiểm tra định kỳ (heartbeat).
+   - Khi có kết nối mạng, worker gom các bản ghi `'PENDING'` thành từng mẻ (batch) và gọi RPC `batch_sync` trên Supabase qua HTTPS POST.
+   - Header request luôn đính kèm JWT của phiên đăng nhập; Supabase thực thi Row-Level Security xác nhận đúng `landlord_id`.
+   - Sau khi Cloud ghi nhận thành công (`HTTP 200/201`), worker đánh dấu mutation `'SYNCED'` hoặc xóa bản ghi outbox để tiết kiệm bộ nhớ máy trạm.
+4. **Quy tắc Giải quyết Xung đột (Conflict Resolution):**
+   - Áp dụng nguyên tắc **Last-Write-Wins (LWW)** dựa trên trường `updated_at` (UTC timestamp).
+   - Mọi xung đột ghi đè đều được tự động lưu vết vào bảng `room_audit_logs` (`NT-03`) để chủ trọ có thể tra cứu và đối soát minh bạch bất kỳ lúc nào.
+5. **Đảm bảo Chi phí $0/tháng (Zero-Cost Optimization):**
+   - Nhờ đọc dữ liệu 100% từ IndexedDB local, số lượng query đọc gửi lên Supabase giảm hơn 80%.
+   - Hạn mức Free Tier của Supabase (`500MB Database`, `200 CCU Realtime`, `50.000 Monthly Active Users`) hoàn toàn đáp ứng tốt cho giai đoạn MVP và Pilot từ 1 đến 50 nhà trọ mà không phát sinh bất kỳ khoản phí nào.

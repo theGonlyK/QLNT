@@ -5,13 +5,54 @@
 - **Ngày lập:** 2026-11-12
 - **Trạng thái:** `Dự thảo trình Chủ dự án xác nhận` (Phần chế độ `Single-Page` đã được Chủ dự án chốt tại `QLNT-D013`)
 - **Căn cứ tham chiếu:**
-  - Quyết định `QLNT-D010`, `QLNT-D011`, `QLNT-D012`, `QLNT-D013` tại [DECISIONS.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/01-quan-ly/DECISIONS.md)
-  - Tài liệu tham khảo nghiệp vụ [REF_SO_QUAN_LY_AO_3D.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/2.Tai_lieu_tham_khao/3.Tai_lieu_nghiep_vu/REF_SO_QUAN_LY_AO_3D.md) (mẫu học hỏi từ `DiogoNeves/graphics-pop-up-book`, `shiarauzo/book-flip`, `DevGurav/3d-book-reader`, `MONOGRID`)
-  - Hồ sơ kỹ thuật [TECH_PROFILE.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/03-ky-thuat/TECH_PROFILE.md) (Nguyên tắc `NT-01` tách biệt Headless Core và Renderer)
+  - Quyết định `QLNT-D010`, `QLNT-D011`, `QLNT-D012`, `QLNT-D013`, `QLNT-D014` tại [DECISIONS.md](../01-quan-ly/DECISIONS.md)
+  - Biểu mẫu nghiệp vụ thực tế [BO_BIEU_MAU_HOP_DONG_BAN_GIAO_HOA_DON_VN.md](../../../2.Tai_lieu_tham_khao/3.Tai_lieu_nghiep_vu/BO_BIEU_MAU_HOP_DONG_BAN_GIAO_HOA_DON_VN.md) (`REF-MKT-002`)
+  - Tài liệu tham khảo kỹ thuật [REF_SO_QUAN_LY_AO_3D.md](../../../2.Tai_lieu_tham_khao/3.Tai_lieu_nghiep_vu/REF_SO_QUAN_LY_AO_3D.md) (mẫu học hỏi từ `DiogoNeves/graphics-pop-up-book`, `shiarauzo/book-flip`, `DevGurav/3d-book-reader`, `MONOGRID`)
+  - Hồ sơ kỹ thuật [TECH_PROFILE.md](../03-ky-thuat/TECH_PROFILE.md) (Nguyên tắc `NT-01` tách biệt Headless Core và Renderer; Kiến trúc Hybrid Three.js WebGL 3D + DOM Overlay)
 
 ---
 
 ## 1. Quy trình Thực hiện & Hiển thị Chế độ Single-Page cho Bộ 3 Trang Chi tiết Phòng (`QLNT-D013` — Đã chốt)
+
+### 1.0. Kiến trúc Phân tầng Hybrid: Three.js WebGL & DOM Overlay (React 19 + Tailwind CSS)
+
+Hệ thống Sổ quản lý ảo F04 được hiện thực hóa theo mô hình **Hybrid Presentation Architecture** nhằm dung hòa tối ưu giữa tính trải nghiệm game hóa và hiệu năng ứng dụng nghiệp vụ di động:
+
+```
++-----------------------------------------------------------------------------------------+
+|                                TẦNG HIỂN THỊ HYBRID (PRESENTATION)                       |
+|                                                                                         |
+|   +---------------------------------------------------------------------------------+   |
+|   |  DOM OVERLAY (React 19 + Tailwind CSS + SVG) — z-index: 20                      |   |
+|   |  - Mặt bằng tầng 2D (Interactive Floor Map)                                     |   |
+|   |  - Tờ chi tiết Single-Page Trang 1-2-3 (In-place Edit, Native Mobile Keyboard)   |   |
+|   |  - Modal phóng to ảnh Bill chuyển khoản & CCCD (Signed URL R2 15 phút)          |   |
+|   +---------------------------------------^-----------------------------------------+   |
+|                                           |                                             |
+|   +---------------------------------------v-----------------------------------------+   |
+|   |  THREE.JS WEBGL CANVAS (Orthographic Camera) — z-index: 10                     |   |
+|   |  - Cảnh tòa nhà 3D Isometric cố định + Avatar cư dân                            |   |
+|   |  - Hoạt ảnh 3D mở bìa sổ / gập bìa sổ (Book Opening / Closing Transition)       |   |
+|   |  - Icon chấm than 3D (vàng: tiền phòng; đỏ: hỏng hóc)                          |   |
+|   +---------------------------------------^-----------------------------------------+   |
++-------------------------------------------|---------------------------------------------+
+                                            | (Contract & Event Bridge)
++-------------------------------------------v---------------------------------------------+
+|               IGameRenderer Contract & Domain Event Bus (Zustand + TypeScript)          |
++-----------------------------------------------------------------------------------------+
+```
+
+1. **Three.js WebGL Canvas:**
+   - Đảm nhận toàn bộ không gian 3D Isometric cố định của tòa nhà, di chuyển của avatar và hoạt ảnh đóng/mở bìa cuốn sổ 3D trên bàn làm việc của chủ trọ.
+   - Khi chủ trọ bấm mở Sổ F04, Three.js kích hoạt camera tweening mượt mà chuyển vào góc nhìn trực diện cuốn sổ (Orthographic Top-down) và diễn hoạt lật bìa sổ.
+2. **DOM Overlay (React 19 + Tailwind CSS):**
+   - Nằm phủ đè chính xác lên vùng hiển thị của mặt sổ ảo sau khi bìa sổ đã mở phẳng.
+   - Thể hiện Mặt bằng tầng 2D (`STATE_BOOK_FLOOR_MAP`) và Tờ chi tiết phòng Single-Page (`STATE_ROOM_SINGLE_PAGE_1..3`).
+   - **Lợi ích then chốt:**
+     - **Hiển thị văn bản sắc nét 100%:** Text và số liệu được render bằng DOM native, không bị vỡ/nhòe hình như khi vẽ font chữ lên Canvas 3D Texture.
+     - **Tối ưu Bàn phím ảo Mobile (iOS/Android):** Bàn phím số native tự động bật lên khi chạm vào ô nhập chỉ số điện/nước `in-place edit`, tự động cuộn (auto-scroll) chống che khuất trường nhập liệu.
+     - **Bảo toàn 60 FPS:** Three.js không phải liên tục render lại texture nặng nề khi người dùng đang nhập văn bản hoặc duyệt danh sách lịch sử.
+     - **Bảo mật và truyền tải nhanh:** Tích hợp trực tiếp thẻ ảnh `<img>` hiển thị biên lai chuyển khoản và CCCD qua `Signed URL (15 phút)` cấp từ Cloudflare Worker.
 
 ### 1.1. Sơ đồ máy trạng thái hiển thị & điều hướng Sổ quản lý ảo F04
 
@@ -100,6 +141,12 @@ Qua đối chiếu 4 dự án mẫu trong `2.Tai_lieu_tham_khao/3.Tai_lieu_nghie
 Bổ sung vào mục 2 của `03-ky-thuat/TECH_PROFILE.md` nhóm phương thức điều khiển phân hệ Sổ quản lý ảo F04:
 
 ```typescript
+export interface Vector3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export type LedgerDetailTab = 'TAB_1_INFO_PAYMENT' | 'TAB_2_DEVICES' | 'TAB_3_HISTORY';
 
 export interface IGameRenderer {

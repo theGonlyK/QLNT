@@ -9,6 +9,7 @@
 |---|---|---|---|---|---|
 | **1.0** | 2026-11-07 | Agent BA | Senior BA | Khởi tạo tài liệu SRS chính thức:<br>- Đặc tả chi tiết 10 module chức năng đáp ứng đầy đủ yêu cầu nghiệp vụ trong BRD.<br>- Bổ sung đặc tả phân hệ Khách vãng lai (`FR-GUEST`) và Cổng QR tức thì cho Cán bộ Điện/Nước & Công an khu vực (`FR-PORTAL-QR`).<br>- Chi tiết hóa contract `IGameRenderer` đảm bảo khả năng chuyển đổi đồ họa từ 2D lên 2.5D/3D trơn tru.<br>- Thiết lập các yêu cầu phi chức năng (Hiệu năng 60 FPS, Offline Local-First, Bảo mật dữ liệu cá nhân). | Đã duyệt |
 | **1.1** | 2026-11-09 | PM | Điều phối | Làm rõ đích 3D camera isometric cố định; P1 dựng renderer 3D đơn giản, các giai đoạn sau thay dần placeholder bằng asset 3D. | Đã duyệt định hướng |
+| **1.2** | 2026-11-12 | Agent BA | BA Lead | Đồng bộ chuẩn hóa hợp đồng IGameRenderer/Vector3D và nhóm hàm Sổ F04; mở rộng mục 6 thành chuẩn 10 thực thể dữ liệu (UUID v4) bao phủ REF-MKT-002 & RoomAuditLog NT-03. | Đã duyệt định hướng |
 
 ---
 
@@ -28,36 +29,61 @@
 Hệ thống tuân thủ nghiêm ngặt nguyên tắc `NT-01` (Hai lớp độc lập: Lớp game không bao giờ sửa dữ liệu thật, chỉ phản ánh dữ liệu thật).
 
 ### 3.1. Hợp đồng giao tiếp đồ họa (`IGameRenderer Interface`)
-Tầng nghiệp vụ hoàn toàn không phụ thuộc vào thư viện vẽ canvas cụ thể. Mọi lệnh đồ họa đều đi qua interface sau:
+Tầng nghiệp vụ (Headless Domain Core) hoàn toàn không phụ thuộc vào thư viện vẽ canvas cụ thể. Mọi lệnh đồ họa và điều khiển hiển thị đều đi qua Single Source of Truth interface sau (khớp chuẩn `TECH_PROFILE.md` và `DAC_TA_SO_QUAN_LY_AO_SINGLE_PAGE_VA_RENDERER.md`):
 
 ```typescript
-export interface Position {
-  floorId: string;
-  roomId?: string;
+export interface Vector3D {
   x: number;
   y: number;
+  z: number;
 }
 
+export type LedgerDetailTab = 'TAB_1_INFO_PAYMENT' | 'TAB_2_DEVICES' | 'TAB_3_HISTORY';
+
 export interface IGameRenderer {
-  // 1. Tòa nhà & Phòng trọ
-  renderBuilding(buildingState: BuildingData): void;
-  highlightRoom(roomId: string, color: string): void;
-  
-  // 2. Avatar & Di chuyển
-  spawnAvatar(avatarId: string, initialPos: Position, skinConfig: AvatarSkin): void;
-  moveAvatar(avatarId: string, targetPos: Position, onArrived?: () => void): void;
-  playAvatarAction(avatarId: string, action: 'KNOCK_DOOR' | 'PAY_MONEY' | 'SWEEP' | 'CATCH_PEST'): void;
-  removeAvatar(avatarId: string): void;
+  // --- Nhóm 1: Điều khiển Cảnh 3D Tòa nhà & Avatar (Camera Isometric cố định) ---
+  renderBuilding(buildingData: BuildingViewModel): void;
+  spawnAvatar(avatarId: string, roomPosition: Vector3D, skinConfig: AvatarSkin): void;
+  moveAvatar(avatarId: string, targetPosition: Vector3D, onComplete?: () => void): void;
+  setDeviceStatus(roomId: string, deviceId: string, status: 'NORMAL' | 'BROKEN'): void; // Bật/tắt chấm than đỏ (NT-08)
+  setRoomNotice(roomId: string, type: 'NONE' | 'PAYMENT_DUE' | 'BILL_PENDING'): void;   // Bật/tắt chấm than vàng (NT-08)
+  playMinigameAction(actionType: string, toolSkin: string): void;
 
-  // 3. Icon Cảnh báo & Trạng thái thị giác
-  setDeviceBrokenAlert(deviceId: string, isBroken: boolean): void; // Chấm than đỏ (NT-08)
-  setRoomPaymentAlert(roomId: string, isDue: boolean): void;       // Chấm than vàng (NT-08)
+  // --- Nhóm 2: Điều khiển Sổ Quản lý Ảo F04 (QLNT-D010..D013 — Hybrid WebGL & DOM Overlay) ---
+  /**
+   * Kích hoạt hoạt ảnh 3D mở Sổ quản lý tháng và chuyển camera sang mặt bằng tầng 2D
+   */
+  openLedgerBook(monthKey: string, initialFloorIndex: number, floorMapData: FloorLedgerViewModel): Promise<void>;
 
-  // 4. Minigame & Tương tác giải trí
-  spawnPest(pestId: string, areaPos: Position, pestType: 'MOUSE' | 'ROACH'): void;
-  removePest(pestId: string): void;
-  triggerObjectSmashEffect(objectId: string, toolSkin: string): void;
-  triggerCleanerNpcCleanup(roomPos: Position, onCompleted: () => void): void;
+  /**
+   * Lật trang sổ sang tầng khác (hiệu ứng book-flip) và vẽ lại mặt bằng 2D của tầng đó
+   */
+  flipLedgerFloorPage(targetFloorIndex: number, floorMapData: FloorLedgerViewModel): Promise<void>;
+
+  /**
+   * Mở tờ chi tiết của 1 phòng ở chế độ Single-Page (QLNT-D013), mặc định mở TAB_1_INFO_PAYMENT
+   */
+  openRoomDetailSinglePage(roomId: string, activeTab: LedgerDetailTab, roomDetailData: RoomDetailViewModel): Promise<void>;
+
+  /**
+   * Chuyển qua lại giữa Trang 1 (Thông tin & Tiền), Trang 2 (Thiết bị), Trang 3 (Lịch sử)
+   */
+  switchRoomDetailPageTab(roomId: string, targetTab: LedgerDetailTab, roomDetailData: RoomDetailViewModel): Promise<void>;
+
+  /**
+   * Đồng bộ lại dữ liệu hiển thị sau khi Headless Core xử lý xong In-place Edit (QLNT-D011) hoặc duyệt bill
+   */
+  refreshRoomDetailView(roomId: string, updatedDetailData: RoomDetailViewModel): void;
+
+  /**
+   * Đóng cấp 1 (QLNT-D012): Đóng tờ chi tiết phòng, quay về trang mặt bằng 2D của tầng trong sổ
+   */
+  closeRoomDetailToFloorMap(updatedFloorMapData: FloorLedgerViewModel): Promise<void>;
+
+  /**
+   * Đóng cấp 2 (QLNT-D012): Gập cuốn sổ quản lý lại và trả camera về góc nhìn không gian 3D Isometric
+   */
+  closeLedgerBookTo3DScene(): Promise<void>;
 }
 ```
 
@@ -214,13 +240,135 @@ export interface IGameRenderer {
 
 ---
 
-## 6. Mô hình dữ liệu & Thực thể chính (Data Model Concepts)
+## 6. Mô hình dữ liệu & Thực thể chuẩn hóa (Standardized Data Schema — 10 Entities)
 
-1. `Landlord` (Chủ trọ): `id`, `name`, `phone`, `email`, `reputation_stars`, `package_tier` ('FREE' | 'PRO').
-2. `Building` (Tòa nhà): `id`, `landlord_id`, `name`, `address`, `total_floors`, `coordinates`, `is_public_on_map`.
-3. `Room` (Phòng trọ): `id`, `building_id`, `floor_number`, `room_number`, `area_sqm`, `price`, `status` ('EMPTY' | 'RENTED' | 'MAINTENANCE').
-4. `Device` (Thiết bị): `id`, `room_id`, `name`, `is_default`, `status` ('NORMAL' | 'BROKEN'), `broken_reported_at`.
-5. `Tenant` (Khách trọ): `id`, `room_id`, `full_name`, `phone`, `id_card_number`, `reward_points`, `avatar_skin_config`.
-6. `Invoice` (Hóa đơn): `id`, `room_id`, `month_period`, `room_charge`, `electric_charge`, `water_charge`, `total_amount`, `status` ('UNPAID' | 'PENDING_APPROVAL' | 'PAID'), `bill_image_url`.
-7. `SaleUser` (Cộng tác viên Sale): `id`, `landlord_id`, `full_name`, `phone`, `valid_until`, `avatar_skin_config`.
-8. `PublicUtilityLog` (Biên bản Điện/Nước/An ninh QR): `id`, `building_id`, `officer_type` ('ELECTRIC' | 'WATER' | 'POLICE'), `officer_ref_code`, `data_payload`, `created_at`.
+Hệ thống chuẩn hóa toàn diện 10 thực thể dữ liệu dùng khóa chính `UUID v4` đồng bộ giữa Local IndexedDB (Dexie.js) và Cloud PostgreSQL (Supabase Free qua Row-Level Security), bao phủ đầy đủ nghiệp vụ thực tế theo `REF-MKT-002` và nguyên tắc nhật ký bất biến `NT-03`:
+
+1. **`landlords` (Chủ trọ / Tài khoản quản trị):**
+   - `id`: UUID v4 (Primary Key)
+   - `name`: string (Họ tên chủ nhà)
+   - `phone`: string (SĐT định danh / Zalo)
+   - `email`: string
+   - `reputation_stars`: number (Điểm sao uy tín tích lũy, mặc định 5.0)
+   - `package_tier`: 'FREE' | 'PRO' (Gói dịch vụ, Giai đoạn 1 mặc định FREE theo QLNT-D014)
+   - `created_at`, `updated_at`: TIMESTAMP
+
+2. **`properties` (Khu trọ / Tòa nhà — Tương ứng Building):**
+   - `id`: UUID v4 (Primary Key)
+   - `landlord_id`: UUID (FK -> landlords.id — RLS Tenant Key)
+   - `name`: string (Tên tòa nhà / khu trọ)
+   - `address`: string (Địa chỉ thực tế tại Hà Nội)
+   - `total_floors`: number (Tổng số tầng)
+   - `coordinates_3d`: Vector3D / JSON (Tọa độ logic trong không gian 3D Isometric)
+   - `water_calc_method`: 'PER_M3' | 'PER_HEAD' (Phương pháp tính tiền nước: theo số m³ đồng hồ hoặc theo đầu người theo REF-MKT-002)
+   - `is_public_on_map`: boolean (Cho phép hiển thị số phòng trống lên Bản đồ khu phố hay không)
+   - `created_at`, `updated_at`: TIMESTAMP
+
+3. **`rooms` (Phòng trọ):**
+   - `id`: UUID v4 (Primary Key)
+   - `property_id`: UUID (FK -> properties.id)
+   - `floor_number`: number (Số tầng: 1, 2, 3...)
+   - `room_number`: string (Mã phòng: 'P.101', 'P.201'...)
+   - `area_sqm`: number (Diện tích phòng m²)
+   - `price_base`: number (Giá thuê phòng cơ bản hàng tháng VNĐ)
+   - `status`: 'EMPTY' | 'RENTED' | 'MAINTENANCE' (Trạng thái phòng)
+   - `has_yellow_notice`: boolean (Cảnh báo chấm than vàng — tiền trọ / chờ duyệt bill)
+   - `has_red_alert`: boolean (Cảnh báo chấm than đỏ — thiết bị báo hỏng)
+   - `created_at`, `updated_at`: TIMESTAMP
+
+4. **`tenants` (Khách thuê / Cư dân trọ):**
+   - `id`: UUID v4 (Primary Key)
+   - `room_id`: UUID (FK -> rooms.id, nullable khi trả phòng)
+   - `full_name`: string (Họ và tên)
+   - `phone`: string (SĐT liên hệ / Zalo)
+   - `id_card_number`: string (CCCD 12 số định danh cá nhân)
+   - `id_card_front_url`: string (Đường dẫn ảnh mặt trước CCCD — Cloudflare R2 Private Bucket qua Signed URL 15 phút)
+   - `id_card_back_url`: string (Đường dẫn ảnh mặt sau CCCD — Cloudflare R2 Private Bucket qua Signed URL 15 phút)
+   - `dob_or_hometown`: string (Năm sinh / quê quán theo REF-MKT-002)
+   - `license_plate`: string (Biển số xe máy / xe điện gửi hầm xe theo REF-MKT-002)
+   - `role`: 'PRIMARY_REP' | 'CO_TENANT' (Đại diện ký hợp đồng hay ở ghép theo REF-MKT-002)
+   - `temporary_residence_status`: 'REGISTERED' | 'PENDING' (Tình trạng khai báo tạm trú VNeID theo REF-MKT-002)
+   - `reward_points`: number (Điểm thưởng gamification tích lũy)
+   - `avatar_skin_config`: JSON (Cấu hình ngoại hình, trang phục avatar trong game)
+   - `created_at`, `updated_at`: TIMESTAMP
+
+5. **`contracts` (Hợp đồng thuê trọ):**
+   - `id`: UUID v4 (Primary Key)
+   - `property_id`: UUID (FK -> properties.id)
+   - `room_id`: UUID (FK -> rooms.id)
+   - `tenant_rep_id`: UUID (FK -> tenants.id — Người đại diện ký)
+   - `contract_start_date`: DATE (Ngày bắt đầu thuê)
+   - `contract_end_date`: DATE (Thời hạn hợp đồng: 6 tháng, 12 tháng theo REF-MKT-002)
+   - `deposit_amount`: number (Tiền đặt cọc, thường là 1 tháng tiền phòng)
+   - `rental_price_agreed`: number (Giá thuê thỏa thuận VNĐ/tháng)
+   - `payment_cycle_day`: number (Kỳ thu tiền hàng tháng: mùng 1 đến mùng 5)
+   - `status`: 'ACTIVE' | 'EXPIRED' | 'TERMINATED'
+   - `contract_file_url`: string (Ảnh hoặc file PDF hợp đồng trên R2)
+   - `created_at`, `updated_at`: TIMESTAMP
+
+6. **`billings` (Bảng kê thu tiền phòng & dịch vụ hàng tháng):**
+   - `id`: UUID v4 (Primary Key)
+   - `room_id`: UUID (FK -> rooms.id)
+   - `month_key`: string (Định dạng 'YYYY-MM', tương ứng mỗi cuốn sổ quản lý)
+   - `room_charge`: number (Tiền thuê phòng cố định)
+   - `electric_charge`: number (Tiền điện theo chỉ số tiêu thụ)
+   - `water_charge`: number (Tiền nước theo m³ hoặc khoán đầu người)
+   - `service_charge`: number (Dịch vụ chung: rác, vệ sinh, thang máy, wifi theo REF-MKT-002)
+   - `parking_charge`: number (Phí gửi xe máy / sạc xe điện theo REF-MKT-002)
+   - `debt_or_discount`: number (Nợ cũ kỳ trước hoặc khấu trừ sửa chữa theo REF-MKT-002)
+   - `total_amount`: number (Tổng cộng tiền phải thu)
+   - `status`: 'UNPAID' | 'PENDING_APPROVAL' | 'PAID' | 'OVERDUE'
+   - `due_date`: DATE (Hạn chót thanh toán trước khi bị phạt trừ điểm)
+   - `created_at`, `updated_at`: TIMESTAMP
+
+7. **`payment_records` (Biên lai nộp tiền & Đối soát thanh toán):**
+   - `id`: UUID v4 (Primary Key)
+   - `billing_id`: UUID (FK -> billings.id)
+   - `room_id`: UUID (FK -> rooms.id)
+   - `amount_paid`: number (Số tiền khách chuyển)
+   - `payment_method`: 'MANUAL_TRANSFER' | 'CASH' | 'DYNAMIC_VIETQR' (Giai đoạn P1 hỗ trợ chuyển khoản thủ công có bill UNC)
+   - `bill_image_url`: string (Ảnh chụp biên lai UNC — Lưu trữ Cloudflare R2 Private Bucket, cấp qua Signed URL 15 phút)
+   - `payer_tenant_id`: UUID (FK -> tenants.id)
+   - `approved_by_landlord_id`: UUID (FK -> landlords.id, nullable khi chưa duyệt)
+   - `status`: 'PENDING' | 'APPROVED' | 'REJECTED'
+   - `rejection_reason`: string (Lý do từ chối nếu bill không hợp lệ)
+   - `paid_at`: TIMESTAMP (Thời điểm khách bấm nộp bill để tính điểm thưởng đúng hạn)
+   - `approved_at`: TIMESTAMP (Thời điểm chủ trọ duyệt tiền trong Sổ F04)
+
+8. **`meter_readings` (Chỉ số công tơ điện & đồng hồ nước):**
+   - `id`: UUID v4 (Primary Key)
+   - `room_id`: UUID (FK -> rooms.id)
+   - `month_key`: string (Định dạng 'YYYY-MM')
+   - `meter_type`: 'ELECTRIC' | 'WATER' (Phân loại công tơ điện hoặc nước)
+   - `old_value`: number (Chỉ số cũ — tự động kế thừa từ tháng trước)
+   - `new_value`: number (Chỉ số mới — nhập in-place edit trên Trang 1 hoặc quét QR)
+   - `consumption`: number (Sản lượng tiêu thụ = new_value - old_value)
+   - `unit_price`: number (Đơn giá điện: 3.800 đ/kWh, nước: 25.000 đ/m³)
+   - `meter_photo_url`: string (Ảnh chụp mặt đồng hồ công tơ đối chứng)
+   - `recorded_by_type`: 'LANDLORD' | 'PUBLIC_UTILITY_OFFICER' (Chủ trọ nhập hoặc cán bộ tiện ích quét QR)
+   - `recorded_at`: TIMESTAMP
+
+9. **`room_audit_logs` (Nhật ký biến động phòng — Append-only NT-03):**
+   - `id`: UUID v4 (Primary Key)
+   - `room_id`: UUID (FK -> rooms.id)
+   - `actor_id`: UUID (ID của chủ trọ, khách trọ, cán bộ công an hoặc hệ thống)
+   - `actor_type`: 'LANDLORD' | 'TENANT' | 'SYSTEM' | 'POLICE' | 'UTILITY_OFFICER'
+   - `action_type`: 'FIELD_EDIT' | 'BILL_APPROVE' | 'DEVICE_CHANGE' | 'TENANT_MOVE' | 'CONTRACT_UPDATE'
+   - `field_name`: string (Tên trường bị thay đổi, VD: 'new_electric_value', 'rental_price')
+   - `old_value`: string / JSON (Giá trị trước khi sửa)
+   - `new_value`: string / JSON (Giá trị sau khi sửa)
+   - `description`: string (Mô tả hành động hiển thị trên Timeline Trang 3 Sổ F04)
+   - `created_at`: TIMESTAMP (Thời điểm ghi nhận — Bất biến, không cho phép cập nhật hay xóa theo nguyên tắc NT-03)
+
+10. **`maintenance_requests` (Yêu cầu báo hỏng & Sửa chữa thiết bị):**
+    - `id`: UUID v4 (Primary Key)
+    - `room_id`: UUID (FK -> rooms.id)
+    - `device_name_or_id`: string (Tên thiết bị trong danh mục 10 thiết bị chuẩn REF-MKT-002: Điều hòa, Bình nóng lạnh, Giường, Tủ, Bếp, Bồn cầu...)
+    - `requester_tenant_id`: UUID (FK -> tenants.id — Người phát hiện sự cố)
+    - `issue_description`: string (Mô tả hiện tượng hỏng hóc)
+    - `issue_photo_url`: string (Ảnh chụp thiết bị hỏng)
+    - `status`: 'BROKEN' | 'IN_PROGRESS' | 'RESOLVED' (Gắn với chấm than đỏ)
+    - `repair_cost`: number (Chi phí sửa chữa thực tế)
+    - `reported_at`: TIMESTAMP (Thời điểm bật chấm than đỏ)
+    - `resolved_at`: TIMESTAMP (Thời điểm chủ trọ xác nhận hoàn tất — tắt chấm than đỏ)
+    - `resolved_by_landlord_id`: UUID (FK -> landlords.id)

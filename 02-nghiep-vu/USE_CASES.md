@@ -8,6 +8,7 @@
 | Phiên bản | Ngày | Người thực hiện | Vai trò | Tóm tắt nội dung điều chỉnh | Trạng thái |
 |---|---|---|---|---|---|
 | **1.0** | 2026-11-07 | Agent BA | Senior BA | Khởi tạo tài liệu đặc tả Use Case chi tiết:<br>- Tổng hợp danh mục 26 Use Case (UC) phân theo 8 phân hệ.<br>- Đặc tả chi tiết 8 Use Case cốt lõi kèm luồng giao dịch (Transaction Flow giữa UI ↔ Core Domain ↔ Game Renderer).<br>- Quy định rõ điều kiện tiên quyết, hậu điều kiện và luồng ngoại lệ. | Đã duyệt |
+| **1.1** | 2026-11-12 | Agent BA | BA Lead | Đồng bộ chuẩn hóa contract IGameRenderer (`Vector3D`, `setDeviceStatus`, `setRoomNotice`) và nhóm hàm điều khiển Sổ quản lý ảo F04 Single-Page in-place edit theo `TECH_PROFILE.md` và `DAC_TA_SO_QUAN_LY_AO_SINGLE_PAGE_VA_RENDERER.md`. | Đã duyệt định hướng |
 
 ---
 
@@ -65,11 +66,11 @@
 
 #### Luồng giao dịch chính (Main Flow):
 1. Đến ngày cấu hình kỳ thu tiền (hoặc chủ nhà bấm nút "Phát thông báo thu tiền tháng này" tại Phòng quản lý).
-2. Tầng Core tạo bản ghi `Invoice` cho từng phòng với trạng thái `UNPAID` (tiền phòng + tiền điện nước + tiền dịch vụ).
-3. Tầng Core phát sự kiện `EVT_PAYMENT_DUE(roomId, invoiceId)`.
-4. Renderer gọi lệnh `setRoomPaymentAlert(roomId, true)`: Hiển thị icon **chấm than vàng** nhấp nháy trên cánh cửa phòng.
-5. Renderer gọi lệnh `moveAvatar(landlordAvatarId, doorPosition)`: Avatar chủ nhà bước đến đứng trước cửa phòng.
-6. Renderer gọi lệnh `playAvatarAction('KNOCK_DOOR')`: Avatar giơ tay gõ cửa, xuất hiện bong bóng thoại nhỏ *"Đến kỳ tiền phòng rồi bạn nhé! 🛎️"*.
+2. Tầng Core tạo bản ghi `billings` cho từng phòng với trạng thái `UNPAID` (tiền phòng + tiền điện nước + tiền dịch vụ).
+3. Tầng Core phát sự kiện `EVT_PAYMENT_DUE(roomId, billingId)`.
+4. Renderer gọi lệnh `setRoomNotice(roomId, 'PAYMENT_DUE')`: Hiển thị icon **chấm than vàng** nhấp nháy trên cánh cửa phòng trong không gian 3D.
+5. Renderer gọi lệnh `moveAvatar(landlordAvatarId, doorPosition: Vector3D)`: Avatar chủ nhà bước đến đứng trước cửa phòng.
+6. Renderer gọi lệnh `playMinigameAction('KNOCK_DOOR', 'DEFAULT')`: Avatar giơ tay gõ cửa, xuất hiện bong bóng thoại nhỏ *"Đến kỳ tiền phòng rồi bạn nhé! 🛎️"*.
 7. Hệ thống gửi thông báo đẩy (push notification) đến điện thoại của khách thuê kèm chi tiết hóa đơn.
 
 ---
@@ -78,17 +79,17 @@
 - **Actor chính:** Khách trọ.
 - **Actor phụ:** Chủ nhà, Game Renderer.
 - **Màn hình liên quan:** Màn hình "Nhiệm vụ đóng tiền trọ" (`SCR-TNT-PAY`).
-- **Tiền điều kiện:** Hóa đơn phòng đang ở trạng thái `CHỜ_THANH_TOÁN`.
+- **Tiền điều kiện:** Hóa đơn `billings` phòng đang ở trạng thái `CHỜ_THANH_TOÁN` (`UNPAID`).
 
 #### Luồng giao dịch chính (Main Flow):
 1. Khách trọ đăng nhập app, thấy chấm than vàng trên cửa phòng mình và danh sách nhiệm vụ nổi bật: *"Nhiệm vụ: Đóng tiền trọ tháng X"*.
 2. Khách chọn nhiệm vụ, xem thông tin số tiền và số tài khoản chủ nhà. Khách chuyển khoản từ app ngân hàng cá nhân, sau đó tải ảnh chụp biên lai giao dịch thành công lên hệ thống.
 3. Khách bấm nút **"Xác nhận nộp tiền"**.
-4. Tầng Core tải ảnh bill lên Object Storage, cập nhật hóa đơn sang trạng thái `CHỜ_DUYỆT` (`PENDING_APPROVAL`), lưu thời gian nộp để tính điểm thưởng.
+4. Tầng Core tải ảnh bill lên Cloudflare R2 Private Bucket qua Edge Function cấp Signed URL (15 phút), tạo bản ghi `payment_records` và cập nhật `billings` sang trạng thái `PENDING_APPROVAL` (`CHỜ_DUYỆT`), lưu thời gian nộp để tính điểm thưởng.
 5. Tầng Core phát sự kiện `EVT_TENANT_SUBMIT_PAYMENT(tenantId, landlordId)`.
-6. Renderer gọi lệnh `moveAvatar(tenantAvatarId, landlordOfficePos)`: Avatar khách cầm phong bì/xấp tiền đi từ phòng mình đến phòng quản lý/chỗ đứng của avatar chủ nhà.
+6. Renderer gọi lệnh `moveAvatar(tenantAvatarId, landlordOfficePos: Vector3D)`: Avatar khách cầm phong bì/xấp tiền đi từ phòng mình đến phòng quản lý/chỗ đứng của avatar chủ nhà.
 7. Diễn hoạt hành động cúi chào và trao tiền (`PAY_MONEY`).
-8. Cửa phòng **vẫn giữ icon chấm than vàng** (chờ chủ duyệt).
+8. Cửa phòng và ô phòng trên mặt bằng 2D tiếp tục duy trì trạng thái qua `setRoomNotice(roomId, 'BILL_PENDING')` (chấm than vàng chờ chủ duyệt).
 9. Hệ thống gửi thông báo đẩy đến app của chủ nhà: *"Phòng [Số phòng] vừa nộp bill chuyển khoản, vui lòng kiểm tra và duyệt!"*.
 
 ---
@@ -96,67 +97,76 @@
 ### `UC-PAY-03`: Chủ nhà mở Sổ quản lý ảo kiểm tra & Duyệt nộp tiền (Tắt chấm than vàng, cộng điểm)
 - **Actor chính:** Chủ nhà.
 - **Actor phụ:** Khách trọ, Game Renderer.
-- **Màn hình liên quan:** Màn hình "Sổ quản lý ảo tháng [X]" (`SCR-LL-LEDGER`) & Bộ 3 trang giấy chi tiết phòng.
-- **Tiền điều kiện:** Khách trọ đã nộp ảnh bill chuyển khoản (Hóa đơn ở trạng thái `CHỜ_DUYỆT`).
+- **Màn hình liên quan:** Màn hình "Sổ quản lý ảo tháng [X]" (`SCR-LL-LEDGER`) & Tờ chi tiết phòng Single-Page (Trang 1, Trang 2, Trang 3).
+- **Tiền điều kiện:** Khách trọ đã nộp ảnh bill chuyển khoản (Hóa đơn `billings` ở trạng thái `PENDING_APPROVAL`).
 
 #### Luồng giao dịch chính (Main Flow):
 1. Chủ nhà nhận thông báo có bill nộp tiền mới (hoặc chủ động ngồi tại Phòng quản lý ảo mở Sổ quản lý).
-2. Diễn hoạt hoạt ảnh: Chủ nhà mở cuốn **Sổ quản lý ảo** tương ứng với tháng hiện tại.
-3. Cuốn sổ hiển thị các trang sắp xếp theo từng tầng; mỗi trang là **mặt bằng 2D của 1 tầng**, trực quan hóa trạng thái:
+2. Tầng Core gửi lệnh `CMD_OPEN_LEDGER_BOOK` -> Renderer gọi lệnh `openLedgerBook(monthKey, initialFloorIndex, floorMapData)`:
+   - Kích hoạt hoạt ảnh nhân vật chủ nhà mở cuốn **Sổ quản lý ảo** tương ứng với tháng hiện tại.
+   - Camera 3D chuyển mượt mà sang góc nhìn trực diện cuốn sổ (Orthographic Top-down).
+3. Lớp DOM Overlay (React 19 + Tailwind CSS) hiển thị **Mặt bằng 2D của tầng hiện tại**:
    - Phòng trống (màu xanh lá/xám nhạt).
-   - Phòng đang có khách trọ.
+   - Phòng đang có khách trọ (màu ấm).
    - Icon **chấm than vàng** nhấp nháy tại phòng có bill nộp tiền đang chờ duyệt (hoặc phòng nợ tiền).
    - Icon **chấm than đỏ** nhấp nháy tại phòng đang có báo hỏng thiết bị.
+   - Khi chủ nhà vuốt lật trang hoặc bấm tab tầng khác, Renderer gọi `flipLedgerFloorPage(targetFloorIndex, floorMapData)`.
 4. Chủ nhà nhấp chọn vào phòng có chấm than vàng trên mặt bằng 2D tầng.
-5. Cuốn sổ lật tiếp đến **bộ 3 trang giấy chi tiết** của phòng:
-   - **Trang 1 — Thông tin phòng & Thu tiền:** Số điện (cũ/mới/tiêu thụ), số nước (cũ/mới/tiêu thụ), danh sách thông tin cá nhân người đang trọ (Họ tên, CCCD, SĐT), tình trạng tiền phòng và ảnh chụp rõ nét biên lai chuyển khoản do khách nộp.
-   - **Trang 2 — Danh sách thiết bị:** Toàn bộ thiết bị cố định và bổ sung trong phòng kèm trạng thái hiện tại (bình thường / hỏng).
-   - **Trang 3 — Nhật ký lịch sử phòng:** Lịch sử thanh toán các tháng trước, lịch sử bảo trì sửa chữa và các đợt khách thuê trước đây.
+5. Tầng Core xử lý sự kiện `CMD_SELECT_ROOM_ON_FLOOR_MAP` -> Renderer gọi `openRoomDetailSinglePage(roomId, 'TAB_1_INFO_PAYMENT', roomDetailData)`:
+   - Hiển thị tờ chi tiết phòng ở chế độ **Single-Page (`QLNT-D013`)** chiếm trọn màn hình với thanh Header Bookmark Tabs chuyển trang:
+   - **Trang 1 — Thông tin phòng & Thu tiền:** Số điện (cũ/mới/tiêu thụ), số nước (cũ/mới/tiêu thụ), danh sách thông tin cá nhân người đang trọ (Họ tên, CCCD, SĐT), tình trạng tiền phòng và ảnh chụp rõ nét biên lai chuyển khoản do khách nộp (tải qua Signed URL 15 phút từ Cloudflare R2).
+   - **Trang 2 — Danh sách thiết bị:** Toàn bộ thiết bị cố định và bổ sung trong phòng kèm trạng thái hiện tại (bình thường / hỏng). Chuyển tab qua lệnh `switchRoomDetailPageTab(roomId, 'TAB_2_DEVICES', roomDetailData)`.
+   - **Trang 3 — Nhật ký lịch sử phòng:** Dòng thời gian lịch sử thanh toán, bảo trì và khách thuê trước đây (Read-only theo `NT-03`). Chuyển tab qua lệnh `switchRoomDetailPageTab(roomId, 'TAB_3_HISTORY', roomDetailData)`.
 6. Chủ nhà kiểm tra đối chiếu tài khoản ngân hàng thực tế, bấm nút **"Xác nhận đã nhận đủ tiền"** ngay trên Trang 1 của cuốn sổ.
-7. Tầng Core cập nhật hóa đơn sang trạng thái `ĐÃ_THANH_TOÁN` (`PAID`).
+7. Tầng Core phát lệnh `CMD_APPROVE_ROOM_BILL`:
+   - Cập nhật hóa đơn `billings` sang trạng thái `PAID` (`ĐÃ_THANH_TOÁN`).
+   - Cập nhật bản ghi `payment_records` sang trạng thái `APPROVED` kèm `approved_at` và `approved_by_landlord_id`.
+   - Tự động sinh bản ghi lưu vết vào bảng `room_audit_logs` (hiển thị tức thì trên Trang 3 theo `NT-03`).
 8. Tính toán điểm thưởng:
    - Nộp trước hạn: Cộng `+100 điểm thưởng`.
    - Nộp đúng hạn: Cộng `+50 điểm thưởng`.
    - Nộp trễ hạn: Trừ điểm theo số ngày trễ (`-10 điểm/ngày`).
-9. Core phát lệnh `setRoomPaymentAlert(roomId, false)`: **Icon chấm than vàng lập tức biến mất ở cả cửa phòng 3D và trên mặt bằng 2D của cuốn sổ**.
+9. Core phát lệnh `setRoomNotice(roomId, 'NONE')`: **Icon chấm than vàng lập tức biến mất ở cả cửa phòng 3D và trên mặt bằng 2D của cuốn sổ**. Đồng thời gọi `refreshRoomDetailView(roomId, updatedDetailData)` để cập nhật trạng thái hiển thị trên tờ chi tiết.
 10. Renderer hiển thị hiệu ứng sao lấp lánh trên đầu avatar khách kèm số điểm cộng `+50 Điểm thưởng! ⭐`.
 11. Hệ thống gửi thông báo đến khách trọ: *"Chủ nhà đã duyệt thanh toán thành công! Bạn nhận được +50 điểm thưởng."*
 
 #### Luồng ngoại lệ (Alternative Flow — Từ chối bill):
 - Nếu tiền chưa về hoặc ảnh bill không hợp lệ, chủ nhà bấm "Từ chối" trên Trang 1 của sổ và nhập lý do.
-- Hóa đơn quay về trạng thái `CHỜ_THANH_TOÁN`. Icon chấm than vàng tiếp tục giữ nguyên trên cửa phòng 3D và mặt bằng 2D. App khách nhận thông báo nộp lại bill.
+- Hóa đơn quay về trạng thái `UNPAID` (`CHỜ_THANH_TOÁN`), bản ghi `payment_records` đổi sang `REJECTED`. Icon chấm than vàng tiếp tục giữ nguyên qua `setRoomNotice(roomId, 'PAYMENT_DUE')`. Ghi log từ chối vào `room_audit_logs`. App khách nhận thông báo nộp lại bill.
 
 #### Luồng mở rộng (Chỉnh sửa trực tiếp thông tin phòng khi xem chi tiết — `QLNT-D011`):
-1. Trong khi đang mở xem bộ 3 trang giấy chi tiết của phòng trong Sổ quản lý:
-   - **Tại Trang 1:** Chủ nhà có thể click trực tiếp vào các trường chỉ số điện/nước để nhập số mới, chỉnh sửa thông tin người thuê (thêm/bớt người ở cùng, sửa SĐT, CCCD), hoặc cập nhật trạng thái phòng (đang ở, trả phòng, đặt cọc).
+1. Trong khi đang mở xem tờ chi tiết phòng Single-Page trong Sổ quản lý:
+   - **Tại Trang 1:** Chủ nhà có thể chạm trực tiếp vào các trường chỉ số điện/nước để nhập số mới (`in-place edit`), chỉnh sửa thông tin người thuê (thêm/bớt người ở cùng, sửa SĐT, CCCD, biển số xe theo `REF-MKT-002`), hoặc cập nhật trạng thái phòng (đang ở, trả phòng, đặt cọc).
    - **Tại Trang 2:** Chủ nhà có thể thêm thiết bị mới vào phòng, chuyển trạng thái thiết bị (bình thường $\leftrightarrow$ hỏng), hoặc cập nhật ghi chú sửa chữa.
-2. Khi chủ nhà bấm **"Lưu thay đổi"**:
-   - Tầng Core cập nhật trạng thái dữ liệu thật.
-   - Hệ thống tự động ghi một bản ghi nhật ký lưu vết (Audit Log) vào **Trang 3** (ghi rõ: Thời gian, người chỉnh sửa, nội dung trường thay đổi từ giá trị cũ sang giá trị mới) nhằm tuân thủ nguyên tắc `NT-03`.
+2. Khi trường dữ liệu được chỉnh sửa (`CMD_UPDATE_ROOM_FIELD_IN_PLACE`):
+   - Tầng Core xác thực hợp lệ (validation) và cập nhật dữ liệu vào IndexedDB/State Store.
+   - Hệ thống tự động ghi một bản ghi nhật ký lưu vết (Audit Log) bất biến vào bảng `room_audit_logs` (ghi rõ: Thời gian, người chỉnh sửa, trường thay đổi từ giá trị cũ sang giá trị mới) nhằm tuân thủ nguyên tắc `NT-03`.
+   - Gọi `refreshRoomDetailView(roomId, updatedDetailData)` để cập nhật giao diện tờ chi tiết và mặt bằng 2D.
 
 #### Luồng phân cấp đóng/thoát (`QLNT-D012`):
-- Khi đang xem bộ 3 trang giấy chi tiết phòng, chủ nhà bấm nút đóng/quay lại: Tờ giấy chi tiết phòng gập lại và giao diện quay về **trang mặt bằng 2D của tầng trong cuốn sổ tháng**.
-- Khi đang ở trang mặt bằng tầng trong sổ, chủ nhà bấm nút "Đóng sổ": Cuốn sổ gập lại đặt lên bàn làm việc ảo và camera quay về **góc nhìn không gian 3D** (Phòng quản lý ảo / Toàn cảnh tòa nhà).
+- **Cấp 1 — Đóng tờ chi tiết về Sổ:** Khi đang xem chi tiết phòng (Trang 1, Trang 2 hoặc Trang 3), chủ nhà bấm nút `[X Đóng tờ chi tiết]`: Core phát lệnh `CMD_CLOSE_ROOM_DETAIL`, Renderer gọi `closeRoomDetailToFloorMap(updatedFloorMapData)`, tờ giấy chi tiết thu lại và giao diện quay về **trang mặt bằng 2D của tầng trong cuốn sổ tháng**.
+- **Cấp 2 — Đóng Sổ ra ngoài không gian 3D:** Khi đang ở trang mặt bằng tầng trong sổ, chủ nhà bấm nút `[Đóng sổ]`: Core phát lệnh `CMD_CLOSE_LEDGER_BOOK`, Renderer gọi `closeLedgerBookTo3DScene()`, cuốn sổ gập lại và camera quay về **góc nhìn không gian 3D Isometric** ban đầu.
 
 ---
 
 ### `UC-DEV-02` & `UC-DEV-03`: Báo hỏng thiết bị & Xác nhận sửa chữa
 - **Actor:** Khách trọ, Chủ nhà, Game Renderer.
-- **Màn hình liên quan:** Màn hình "Danh mục thiết bị phòng" (`SCR-ROOM-DEVICES`).
+- **Màn hình liên quan:** Màn hình "Danh mục thiết bị phòng" (`SCR-ROOM-DEVICES`) / Trang 2 Sổ F04.
 
 #### Luồng giao dịch chính:
 1. **Báo hỏng (`UC-DEV-02`):**
-   - Khách trọ hoặc chủ trọ nhấp vào phòng, chọn thiết bị hỏng (VD: Máy lạnh).
-   - Chọn "Báo hỏng", nhập mô tả lỗi (kèm tùy chọn chụp ảnh).
-   - Bấm "Gửi báo hỏng" → Tầng Core cập nhật thiết bị sang trạng thái `BROKEN`.
-   - Renderer gọi `setDeviceBrokenAlert(deviceId, true)`: Xuất hiện icon **chấm than đỏ** nhấp nháy trực tiếp trên hình ảnh chiếc máy lạnh trong phòng.
+   - Khách trọ hoặc chủ trọ nhấp vào phòng, chọn thiết bị hỏng (VD: Điều hòa theo danh mục 10 thiết bị chuẩn `REF-MKT-002`).
+   - Chọn "Báo hỏng", nhập mô tả lỗi (kèm tùy chọn chụp ảnh tải lên Cloudflare R2 qua Signed URL).
+   - Bấm "Gửi báo hỏng" → Tầng Core tạo bản ghi `maintenance_requests` với trạng thái `BROKEN`, cập nhật `rooms.has_red_alert = true`.
+   - Hệ thống tự động ghi nhật ký vào `room_audit_logs` (`NT-03`).
+   - Renderer gọi lệnh `setDeviceStatus(roomId, deviceId, 'BROKEN')`: Xuất hiện icon **chấm than đỏ** nhấp nháy trực tiếp trên hình ảnh thiết bị trong phòng 3D và trên ô phòng tại mặt bằng tầng 2D của Sổ F04.
    - Chủ nhà nhận thông báo sự cố đỏ.
 2. **Nghiệm thu sửa chữa (`UC-DEV-03`):**
    - Thợ sửa chữa hoàn tất tại phòng thực tế.
-   - Chủ nhà vào app, mở thiết bị đang báo hỏng, bấm nút **"Xác nhận đã sửa chữa xong"** (nhập chi phí sửa chữa nếu có).
-   - Hệ thống cập nhật trạng thái thiết bị về `NORMAL`.
-   - Renderer gọi `setDeviceBrokenAlert(deviceId, false)`: **Icon chấm than đỏ lập tức biến mất**.
-   - Hệ thống tự động ghi nhật ký sửa chữa vào bảng lịch sử thiết bị gắn với phòng và khách thuê.
+   - Chủ nhà vào app (hoặc mở Trang 2 Sổ F04), mở thiết bị đang báo hỏng, bấm nút **"Xác nhận đã sửa chữa xong"** (nhập chi phí sửa chữa nếu có).
+   - Hệ thống cập nhật `maintenance_requests` sang trạng thái `RESOLVED`, lưu chi phí sửa chữa và thời gian hoàn tất; cập nhật `rooms.has_red_alert = false` nếu phòng không còn thiết bị nào khác bị hỏng.
+   - Hệ thống tự động ghi nhật ký sửa chữa vào bảng `room_audit_logs` (`NT-03`).
+   - Renderer gọi lệnh `setDeviceStatus(roomId, deviceId, 'NORMAL')`: **Icon chấm than đỏ lập tức biến mất** ở cả không gian 3D và trên mặt bằng 2D của Sổ F04.
 
 ---
 

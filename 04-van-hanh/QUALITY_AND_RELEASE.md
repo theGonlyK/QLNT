@@ -1,7 +1,7 @@
 # Chất lượng, Kiểm thử và Phát hành (Quality & Release) — QLNT
 
 - **Trạng thái:** `Đã phê duyệt (Theo quyết định QLNT-D013, QLNT-D014)`
-- **Tài liệu hạ tầng đi kèm:** [HA_TANG_VA_VAN_HANH_HE_THONG.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/04-van-hanh/HA_TANG_VA_VAN_HANH_HE_THONG.md)
+- **Tài liệu hạ tầng đi kèm:** [HA_TANG_VA_VAN_HANH_HE_THONG.md](HA_TANG_VA_VAN_HANH_HE_THONG.md)
 
 ---
 

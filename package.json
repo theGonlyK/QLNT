@@ -1,0 +1,28 @@
+{
+  "name": "qlnt-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@12.18.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=12.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:web": "pnpm --filter @qlnt/web dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "mobile:sync": "pnpm --filter @qlnt/web build && pnpm --filter @qlnt/mobile cap:sync",
+    "mobile:run:android": "pnpm --filter @qlnt/mobile cap:run:android",
+    "mobile:run:ios": "pnpm --filter @qlnt/mobile cap:run:ios",
+    "local:infra:up": "docker compose -f infra/docker/docker-compose.local.yml up -d",
+    "local:infra:down": "docker compose -f infra/docker/docker-compose.local.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
+  }
+}
