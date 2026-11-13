@@ -7,14 +7,14 @@
 - **Mã dự án:** QLNT
 - **Mục tiêu sản phẩm:** Quản lý phòng trọ và khách trọ mang lại trải nghiệm như chơi game; người thuê tìm phòng trên bản đồ khu phố ảo
 - **Chủ dự án / người quyết định:** Người dùng (chủ workspace, thẩm quyền cao nhất); Phụ trách mảng A/B/C: Agent đề xuất, Người dùng phê duyệt
-- **Phạm vi vòng đời hiện tại:** **Đã chốt Cổng G1 (`2026-11-13` — `QLNT-D015`)** — Hoàn tất pha Thiết kế Sprint 1, sẵn sàng chuyển sang pha **Xây dựng (`Sprint 2`: Khung Codebase & Prototype P1)**.
+- **Phạm vi vòng đời hiện tại:** **Đã chốt Cổng G1 (`2026-11-13` — `QLNT-D015`)** — Hoàn tất pha Thiết kế Sprint 1, đang triển khai pha **Xây dựng (`Sprint 2`: Khung Codebase & Prototype P1)**.
 - **Mô hình kiến trúc:** SaaS Multi-tenant (nền tảng chung cho nhiều chủ trọ, chia sẻ bản đồ khu phố, phân tách dữ liệu)
 - **Nhóm loại hình:** Web responsive + App mobile (đóng gói Capacitor từ 1 codebase)
 - **Đích đồ họa:** Thế giới 3D camera isometric cố định; xây dần bằng prototype hình khối, sprite/plane 2D trong cảnh 3D rồi thay dần bằng object 3D theo từng giai đoạn
 - **Thị trường đầu tiên:** Hà Nội — nhà trọ cho sinh viên, người đi làm
-- **Môi trường triển khai:** Local Dev (`IndexedDB`) $\rightarrow$ Cloud Staging/Production (`$0 First`: Cloudflare Pages + Supabase Free + R2 Free)
+- **Môi trường triển khai:** Sprint 2 chạy **100% Local Dev & Thư viện cục bộ (`IndexedDB` + Local Vite Server, `$0`, chưa kết nối bên thứ 3 theo `QLNT-D016`)** $\rightarrow$ Cloud Staging/Production (`$0 First`: Cloudflare Pages + Supabase Free + R2 Free — cần Chủ dự án confirm trước khi kết nối bên thứ 3)
 - **Repository Git:** `TEAM_ORCA/4.Du_an/QLNT` (Git riêng, nhánh `main`)
-- **Trạng thái:** **Đã chốt Cổng G1 (`2026-11-13`)** $\rightarrow$ Đang trình duyệt Kế hoạch Sprint 2 (`01-quan-ly/KE_HOACH_SPRINT_2_PROTOTYPE_P1.md`) để bắt đầu xây dựng mã nguồn & Prototype P1.
+- **Trạng thái:** **Đã chốt Cổng G1 (`QLNT-D015`) & Nguyên tắc Thư viện cục bộ (`QLNT-D016`)** $\rightarrow$ Đã khởi tạo đầy đủ 15 Task Sprint 2 (`#54`–`#68`) trên `theGonlyK/QLNT` & GitHub Project `#2` (`01-quan-ly/KE_HOACH_SPRINT_2_PROTOTYPE_P1.md`).
 
 ## Cách dùng khung
 

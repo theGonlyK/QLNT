@@ -1,6 +1,6 @@
 # Chất lượng, Kiểm thử và Phát hành (Quality & Release) — QLNT
 
-- **Trạng thái:** `Đã phê duyệt (Theo quyết định QLNT-D013, QLNT-D014)`
+- **Trạng thái:** `Đã phê duyệt (Theo quyết định QLNT-D013, QLNT-D014, QLNT-D016)`
 - **Tài liệu hạ tầng đi kèm:** [HA_TANG_VA_VAN_HANH_HE_THONG.md](file:///Users/uni/Documents/AI/AI-Workspace/AI-Workspace/TEAM_ORCA/4.Du_an/QLNT/04-van-hanh/HA_TANG_VA_VAN_HANH_HE_THONG.md)
 
 ---
@@ -40,8 +40,9 @@
 
 ## 4. Cách phát hành / Triển khai & Kiểm soát Chi phí (Release, Deployment & Cost Control)
 
-- **Nguyên tắc ưu tiên số 1 ("Dễ & Không mất phí — `$0 First`"):**
-  - Mặc định triển khai trên **Giai đoạn 1 (`$0/tháng` — Free Tier):** Tự động hóa qua **GitHub Actions CI/CD** $\rightarrow$ triển khai Frontend & 3D Assets lên **Cloudflare Pages**, kết nối **Supabase Free Tier (Singapore)** và **Cloudflare R2 Free Tier (`10GB`, `0đ Egress`)** kết hợp lưu trữ cục bộ **`IndexedDB` (Local-First)**.
+- **Nguyên tắc ưu tiên số 1 ("Dễ & Không mất phí — `$0 First`") & Thư viện cục bộ (`QLNT-D016`):**
+  - **Trong Sprint 2 (Prototype P1):** Chạy 100% cục bộ (`Local Vite Server` + `IndexedDB` + thư viện cài đặt cục bộ như VietQR EMVCo/NAPAS 247 offline); **chưa kết nối bên thứ 3**. Mọi đề xuất deploy hoặc kết nối ra dịch vụ bên thứ 3 phải báo Chủ dự án confirm trước (`QLNT-D016`).
+  - **Khi được Chủ dự án confirm mở kết nối Cloud ở Giai đoạn 1 (`$0/tháng` — Free Tier):** Tự động hóa qua **GitHub Actions CI/CD** $\rightarrow$ triển khai Frontend & 3D Assets lên **Cloudflare Pages**, kết nối **Supabase Free Tier (Singapore)** và **Cloudflare R2 Free Tier (`10GB`, `0đ Egress`)** kết hợp lưu trữ cục bộ **`IndexedDB` (Local-First)**.
 - **Quy trình bắt buộc khi đề xuất tăng hoặc giảm chi phí (Chuyển sang Giai đoạn 2 hoặc 3):**
   - Mọi đề xuất thay đổi làm tăng/giảm chi phí (như thuê VPS Việt Nam `4 vCPU, 8GB RAM` ở Giai đoạn 2 hay tách cụm HA ở Giai đoạn 3) **bắt buộc phải lập báo cáo đánh giá lại 2 chiều**:
     1. **Đánh giá lại cấu trúc hạ tầng:** Đã tối ưu hết mức ở tầng Client (`IndexedDB`), nén ảnh `< 300KB`, nén 3D `.glb` và Cache trên Cloudflare Edge để giữ mức `$0/tháng` hay chưa?

@@ -90,7 +90,7 @@ flowchart LR
 2. **Bảo mật ảnh chụp nhạy cảm (Ảnh Bill chuyển khoản & CCCD khách thuê):**
    - Tuyệt đối **KHÔNG** lưu ảnh bill và ảnh CCCD trong `Public Bucket`.
    - Bắt buộc upload vào **Private Bucket** trên Cloudflare R2 / Supabase Storage và chỉ trả về **Signed URL có thời hạn tối đa 15 phút (`900 giây`)** cho đúng chủ nhà hoặc khách của phòng đó.
-   - Перед khi upload từ điện thoại, Client phải nén ảnh xuống định dạng `WebP/JPEG` (chiều ngang tối đa `1280px`, dung lượng `< 300KB`) để tiết kiệm băng thông 4G và dung lượng lưu trữ.
+   - Trước khi upload từ điện thoại, Client phải nén ảnh xuống định dạng `WebP/JPEG` (chiều ngang tối đa `1280px`, dung lượng `< 300KB`) để tiết kiệm băng thông 4G và dung lượng lưu trữ.
 3. **Tuân thủ nguyên tắc riêng tư `NT-05` và `NT-06`:**
    - API công khai cho Bản đồ tìm phòng (`F06`) và Sale trọ (`F03`) chỉ trả về các trường của **phòng đang trống (`EMPTY`)**, tuyệt đối lọc bỏ ở tầng Backend mọi thông tin cá nhân khách đang thuê, số điện/nước thực tế và lịch sử hóa đơn.
 
