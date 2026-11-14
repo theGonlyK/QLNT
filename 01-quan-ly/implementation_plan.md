@@ -7,7 +7,7 @@
 > **Tài liệu đặc tả cơ sở:** [`spec.md`](spec.md) (`SPEC-ARCH-DEPLOY-001`)  
 > **Quy trình áp dụng:** Tuân thủ nghiêm ngặt `/superpowers:writing-plans` và `/superpowers:subagent-driven-development`  
 > **Ngày lập:** 2026-11-13  
-> **Trạng thái:** **`Đang thực thi — Pha 1, Pha 2 & Pha 3 đã hoàn thành 100% (PASS)`**  
+> **Trạng thái:** **`Đang thực thi — Pha 1, Pha 2, Pha 3 & Pha 4 (@qlnt/web Prototype P1) đã hoàn thành 100% (PASS)`**  
 > **Căn cứ tham chiếu:**
 > - Quy tắc cốt lõi: [`../../../3.DOC_AI/quan-tri/RULES_CORE.md`](../../../3.DOC_AI/quan-tri/RULES_CORE.md)
 > - Các quyết định phê duyệt: [`DECISIONS.md`](DECISIONS.md) (`QLNT-D001` .. `QLNT-D014`)
@@ -193,9 +193,9 @@ flowchart LR
 
 ---
 
-### Pha 4: DOM Overlay Web UI
+### Pha 4: DOM Overlay Web UI `[ĐÃ HOÀN THÀNH 100% - PASS]`
 
-#### Task 4.1: Khởi tạo Host App Web (React 19 + Vite 6 + Tailwind v4)
+#### Task 4.1: Khởi tạo Host App Web (React 19 + Vite 6 + Tailwind v4) `[HOÀN TẤT]`
 - **Mục tiêu:** Xây dựng ứng dụng Web Single-Page đóng vai trò Host Shell.
 - **File tạo mới:**
   - `apps/web/package.json`
@@ -209,7 +209,7 @@ flowchart LR
   pnpm --filter @qlnt/web build
   ```
 
-#### Task 4.2: Phát triển Tầng Hiển thị DOM Overlay cho Sổ F04 Single-Page
+#### Task 4.2: Phát triển Tầng Hiển thị DOM Overlay cho Sổ F04 Single-Page `[HOÀN TẤT]`
 - **Mục tiêu:** Hiện thực hóa giao diện tương tác native theo quyết định `QLNT-D010` .. `QLNT-D013`.
 - **File tạo mới:**
   - `apps/web/src/overlays/floor-map/FloorMapSvg.tsx` (Mặt bằng 2D tầng SVG tương tác)

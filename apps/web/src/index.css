@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@source "../src";
+@source "../../../packages/renderer-2d/src";
+@source "../../../packages/renderer-2d/dist";

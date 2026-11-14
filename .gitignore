@@ -11,3 +11,5 @@ coverage/
 scratch/
 packages/scratch/
 *.tsbuildinfo
+e2e-results/
+test-results/
