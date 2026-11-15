@@ -747,18 +747,90 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     }
     await expect(page.getByTestId('stage-floor-btn-7')).toHaveCount(0);
 
+    // Set demo broken device on back-row room and payment notice on front-row room to verify 3D shadows and badges
+    await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r) return;
+      const backMesh = r.buildingMeshes.find(
+        (m: any) => m.userData?.floor === 1 && m.userData?.rowIdx === 0
+      );
+      const frontMesh = r.buildingMeshes.find(
+        (m: any) => m.userData?.floor === 1 && m.userData?.rowIdx === ((m.userData?.rows ?? 2) - 1)
+      );
+      if (backMesh?.userData?.roomId) {
+        r.setDeviceStatus(backMesh.userData.roomId, 'dev-tower-broken', 'BROKEN');
+      }
+      if (frontMesh?.userData?.roomId) {
+        r.setRoomNotice(frontMesh.userData.roomId, 'PAYMENT_DUE');
+      }
+    });
+
     // Verify 3D mesh count = 24 and grid shape = 2x2
     const tower3dState = await page.evaluate(() => {
       const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
       if (!r) return null;
+      const meshes = (r.buildingMeshes as any[]) || [];
+      const brokenMeshes = meshes.filter((m: any) => m.material?.color?.getHex() === 0xef4444);
+      const noticeMeshes = meshes.filter((m: any) => m.material?.color?.getHex() === 0xf59e0b);
+      const normalMeshes = meshes.filter(
+        (m: any) => m.material?.color?.getHex() !== 0xef4444 && m.material?.color?.getHex() !== 0xf59e0b
+      );
+
+      // Verify shadow properties and emissive
+      const brokenValid = brokenMeshes.every((m: any) => m.receiveShadow === false && m.material?.emissive?.getHex() > 0);
+      const noticeValid = noticeMeshes.every((m: any) => m.receiveShadow === false && m.material?.emissive?.getHex() > 0);
+      const normalValid = normalMeshes.every((m: any) => m.receiveShadow === true && m.material?.emissive?.getHex() === 0);
+
+      // Verify badges positioning on target meshes
+      const badges = Array.from((r.badges as Map<string, any>).entries()).map(([key, badge]: [string, any]) => {
+        const isDevice = key.startsWith('device:');
+        const roomId = isDevice ? key.split(':').slice(1, -1).join(':') : key.slice('room:'.length);
+        const mesh = meshes.find((m: any) => m.userData?.roomId === roomId || m.userData?.legacyRoomId === roomId);
+        const rowIdx = (mesh?.userData?.rowIdx as number | undefined) ?? 0;
+        const rows = (mesh?.userData?.rows as number | undefined) ?? 1;
+        const isFrontRow = rowIdx === rows - 1;
+        return {
+          key,
+          hasMesh: !!mesh,
+          isFrontRow,
+          badgeY: badge.position.y,
+          meshY: mesh?.position.y ?? 0,
+          badgeZ: badge.position.z,
+          meshZ: mesh?.position.z ?? 0,
+        };
+      });
+
       return {
         meshCount: r.buildingMeshes?.length,
         shape: r.getBuildingBlockShape?.(),
+        brokenCount: brokenMeshes.length,
+        brokenValid,
+        noticeCount: noticeMeshes.length,
+        noticeValid,
+        normalValid,
+        badges,
       };
     });
     expect(tower3dState).not.toBeNull();
     expect(tower3dState!.meshCount).toBe(24);
     expect(tower3dState!.shape).toEqual({ cols: 2, rows: 2 });
+    expect(tower3dState!.brokenCount).toBeGreaterThan(0);
+    expect(tower3dState!.brokenValid).toBe(true);
+    expect(tower3dState!.noticeCount).toBeGreaterThan(0);
+    expect(tower3dState!.noticeValid).toBe(true);
+    expect(tower3dState!.normalValid).toBe(true);
+    for (const b of tower3dState!.badges) {
+      if (b.hasMesh) {
+        if (b.isFrontRow) {
+          // Front-row: anchor in front of room mesh
+          expect(b.badgeZ).toBeGreaterThan(b.meshZ + 0.4);
+        } else {
+          // Back-row: anchor on top of room mesh, not spilling into front row
+          expect(Math.abs(b.badgeZ - b.meshZ)).toBeLessThan(0.2);
+          expect(b.badgeY).toBeGreaterThan(b.meshY + 0.5);
+        }
+      }
+    }
 
     // Capture screenshot: 10-building-block-preset-tower-2x2x6.png
     await page.screenshot({
@@ -783,18 +855,88 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     await expect(page.getByTestId('stage-floor-btn-4')).toHaveCount(0);
     await expect(page.getByTestId('dock-floor-btn-4')).toHaveCount(0);
 
+    // Set demo broken device on back/middle-row room and payment notice on front-row room to verify 3D shadows and badges
+    await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r) return;
+      const backMesh = r.buildingMeshes.find(
+        (m: any) => m.userData?.floor === 1 && m.userData?.rowIdx === 0
+      );
+      const frontMesh = r.buildingMeshes.find(
+        (m: any) => m.userData?.floor === 1 && m.userData?.rowIdx === ((m.userData?.rows ?? 3) - 1)
+      );
+      if (backMesh?.userData?.roomId) {
+        r.setDeviceStatus(backMesh.userData.roomId, 'dev-cube-broken', 'BROKEN');
+      }
+      if (frontMesh?.userData?.roomId) {
+        r.setRoomNotice(frontMesh.userData.roomId, 'PAYMENT_DUE');
+      }
+    });
+
     // Verify 3D mesh count = 27 and grid shape = 3x3
     const cube3dState = await page.evaluate(() => {
       const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
       if (!r) return null;
+      const meshes = (r.buildingMeshes as any[]) || [];
+      const brokenMeshes = meshes.filter((m: any) => m.material?.color?.getHex() === 0xef4444);
+      const noticeMeshes = meshes.filter((m: any) => m.material?.color?.getHex() === 0xf59e0b);
+      const normalMeshes = meshes.filter(
+        (m: any) => m.material?.color?.getHex() !== 0xef4444 && m.material?.color?.getHex() !== 0xf59e0b
+      );
+
+      // Verify shadow properties and emissive in 3x3x3 layout
+      const brokenValid = brokenMeshes.every((m: any) => m.receiveShadow === false && m.material?.emissive?.getHex() > 0);
+      const noticeValid = noticeMeshes.every((m: any) => m.receiveShadow === false && m.material?.emissive?.getHex() > 0);
+      const normalValid = normalMeshes.every((m: any) => m.receiveShadow === true && m.material?.emissive?.getHex() === 0);
+
+      // Verify badges positioning on target meshes
+      const badges = Array.from((r.badges as Map<string, any>).entries()).map(([key, badge]: [string, any]) => {
+        const isDevice = key.startsWith('device:');
+        const roomId = isDevice ? key.split(':').slice(1, -1).join(':') : key.slice('room:'.length);
+        const mesh = meshes.find((m: any) => m.userData?.roomId === roomId || m.userData?.legacyRoomId === roomId);
+        const rowIdx = (mesh?.userData?.rowIdx as number | undefined) ?? 0;
+        const rows = (mesh?.userData?.rows as number | undefined) ?? 1;
+        const isFrontRow = rowIdx === rows - 1;
+        return {
+          key,
+          hasMesh: !!mesh,
+          isFrontRow,
+          badgeY: badge.position.y,
+          meshY: mesh?.position.y ?? 0,
+          badgeZ: badge.position.z,
+          meshZ: mesh?.position.z ?? 0,
+        };
+      });
+
       return {
         meshCount: r.buildingMeshes?.length,
         shape: r.getBuildingBlockShape?.(),
+        brokenCount: brokenMeshes.length,
+        brokenValid,
+        noticeCount: noticeMeshes.length,
+        noticeValid,
+        normalValid,
+        badges,
       };
     });
     expect(cube3dState).not.toBeNull();
     expect(cube3dState!.meshCount).toBe(27);
     expect(cube3dState!.shape).toEqual({ cols: 3, rows: 3 });
+    expect(cube3dState!.brokenCount).toBeGreaterThan(0);
+    expect(cube3dState!.brokenValid).toBe(true);
+    expect(cube3dState!.noticeCount).toBeGreaterThan(0);
+    expect(cube3dState!.noticeValid).toBe(true);
+    expect(cube3dState!.normalValid).toBe(true);
+    for (const b of cube3dState!.badges) {
+      if (b.hasMesh) {
+        if (b.isFrontRow) {
+          expect(b.badgeZ).toBeGreaterThan(b.meshZ + 0.4);
+        } else {
+          expect(Math.abs(b.badgeZ - b.meshZ)).toBeLessThan(0.2);
+          expect(b.badgeY).toBeGreaterThan(b.meshY + 0.5);
+        }
+      }
+    }
 
     // Capture screenshot: 11-building-block-preset-cube-3x3x3.png
     await page.screenshot({
