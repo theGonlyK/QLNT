@@ -4,6 +4,8 @@ import { useRendererBridge } from './bridge/useRendererBridge';
 import type { LedgerController } from './bridge/ledgerController';
 import { Canvas3DStage } from './components/Canvas3DStage';
 import { LedgerOverlayHost } from './components/LedgerOverlayHost';
+import { LoginScreen } from './components/LoginScreen';
+import { BuildingSetupModal } from './components/BuildingSetupModal';
 
 export interface AppMetadata {
   name: string;
@@ -36,6 +38,8 @@ export function App(props: AppProps) {
   const { initialMobileViewport = false, controller } = props;
   const metadata = getAppMetadata();
   const [isMobileViewport, setIsMobileViewport] = useState<boolean>(initialMobileViewport);
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
+  const [isBuildingSetupOpen, setIsBuildingSetupOpen] = useState<boolean>(false);
   const bridge = useRendererBridge(controller);
 
   return (
@@ -68,6 +72,12 @@ export function App(props: AppProps) {
             Đang ở: {bridge.summary.occupiedCount}/{bridge.summary.totalRooms}
           </span>
           <span
+            className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+            data-testid="hud-total-area"
+          >
+            Tổng DT: {bridge.summary.totalAreaSqm} m²
+          </span>
+          <span
             className="px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40"
             data-testid="hud-payment-due-count"
           >
@@ -88,7 +98,29 @@ export function App(props: AppProps) {
         </div>
 
         {/* Primary HUD Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsLoginOpen(true)}
+            style={{ minHeight: `${MIN_TOUCH_TARGET_SIZE}px` }}
+            className="px-3 py-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-200 text-xs font-bold border border-stone-600 transition-colors"
+            data-testid="open-login-screen-btn"
+          >
+            {bridge.isAuthenticated && bridge.landlord
+              ? `Chủ trọ: ${bridge.landlord.name}`
+              : 'Tài khoản / Đăng nhập'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsBuildingSetupOpen(true)}
+            style={{ minHeight: `${MIN_TOUCH_TARGET_SIZE}px` }}
+            className="px-3 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold border border-emerald-600 transition-colors"
+            data-testid="open-building-setup-btn"
+          >
+            Đăng ký Diện tích & Phòng
+          </button>
+
           <button
             type="button"
             onClick={() => setIsMobileViewport((prev) => !prev)}
@@ -142,9 +174,16 @@ export function App(props: AppProps) {
       <div className="flex-1 p-2 md:p-4 flex flex-col">
         <Canvas3DStage
           roomsWithNotices={bridge.roomsWithNotices}
+          totalFloors={bridge.totalFloors}
+          viewMode={bridge.viewMode}
+          activeFloorIndex={bridge.activeFloorIndex}
+          currentBlockPresetId={bridge.currentBlockPresetId}
+          onSelectBlockPreset={(presetId) => void bridge.applyBuildingBlockPreset(presetId)}
           onAttachRenderer={bridge.attachRenderer}
           onSelectFloor={(floorNum) => void bridge.openBookForFloor(floorNum)}
-          onSelectRoom={(roomId, tab) => void bridge.openRoomDetail(roomId, tab)}
+          onSelectFloorCutaway={(floorIndex) => void bridge.selectFloor(floorIndex)}
+          onBackToBuilding={() => void bridge.backToBuilding()}
+          onSelectRoom={(roomId, tab) => void bridge.openRoomDetailFromFloor(roomId, tab)}
           isMobileViewport={isMobileViewport}
         />
       </div>
@@ -153,6 +192,7 @@ export function App(props: AppProps) {
       <LedgerOverlayHost
         isBookOpen={bridge.isBookOpen}
         currentFloor={bridge.currentFloor}
+        totalFloors={bridge.totalFloors}
         floorMap={bridge.floorMap}
         roomDetail={bridge.roomDetail}
         activeTab={bridge.activeTab}
@@ -178,8 +218,46 @@ export function App(props: AppProps) {
         onResolveDeviceMaintenance={(roomId, deviceId) =>
           void bridge.resolveDeviceMaintenance(roomId, deviceId)
         }
-        onCloseRoomDetail={() => void bridge.closeRoomDetailToFloorMap()}
+        onCloseRoomDetail={() => {
+          if (bridge.viewMode === 'FLOOR_3D') {
+            void bridge.closeLedgerBookTo3DScene();
+          } else {
+            void bridge.closeRoomDetailToFloorMap();
+          }
+        }}
         onCloseBook={() => void bridge.closeLedgerBookTo3DScene()}
+      />
+
+      {/* Landlord Login / Register Screen (z-index: 30) */}
+      <LoginScreen
+        isOpen={isLoginOpen}
+        isMobileViewport={isMobileViewport}
+        onLogin={async (phoneOrEmail, pin) => {
+          await bridge.loginLandlord(phoneOrEmail, pin);
+          setIsLoginOpen(false);
+        }}
+        onQuickDemoLogin={async () => {
+          await bridge.loginDemoLandlord();
+          setIsLoginOpen(false);
+        }}
+        onRegisterLandlord={async (input) => {
+          await bridge.registerLandlord(input);
+          setIsLoginOpen(false);
+          setIsBuildingSetupOpen(true);
+        }}
+        onClose={() => setIsLoginOpen(false)}
+      />
+
+      {/* Building Area & Room Count Setup Modal (z-index: 35) */}
+      <BuildingSetupModal
+        isOpen={isBuildingSetupOpen}
+        property={bridge.property}
+        rooms={bridge.roomsWithNotices.map((item) => item.room)}
+        isMobileViewport={isMobileViewport}
+        onSaveBuilding={async (input) => {
+          await bridge.registerOrUpdateBuilding(input);
+        }}
+        onClose={() => setIsBuildingSetupOpen(false)}
       />
     </main>
   );
