@@ -953,4 +953,113 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     expect(pageErrors).toEqual([]);
     expect(externalRequests).toEqual([]);
   });
+
+  test('TC-P1-14-3D-BOOK-POPUP-TRANSITION: Mo So Quan Ly F04 -> Hoat Anh 3D Pop-up Book Open (Perspective, Ban Le & Gay So 3D) -> Xem Day Du Mat Bang Tang -> Gap So (3D) Smooth Folding Unmount', async ({
+    page,
+  }) => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+    const externalRequests: string[] = [];
+
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+    page.on('pageerror', (err) => {
+      pageErrors.push(err.message);
+    });
+    page.on('request', (req) => {
+      const url = req.url();
+      if (
+        !url.startsWith('http://127.0.0.1:4173') &&
+        !url.startsWith('data:') &&
+        !url.startsWith('blob:')
+      ) {
+        externalRequests.push(url);
+      }
+    });
+
+    await page.goto('/');
+    await expect(page.getByTestId('qlnt-web-app')).toBeVisible();
+    await expect(page.getByTestId('canvas-3d-stage')).toBeVisible();
+    await expect(page.getByTestId('three-game-canvas')).toBeVisible();
+
+    // 1. Initial State: Ledger book overlay is NOT present
+    await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0);
+
+    // 2. Click "Mở Sổ Quản Lý F04" HUD button to initiate 3D book opening
+    const openBookBtn = page.getByTestId('open-ledger-book-btn');
+    await expect(openBookBtn).toBeVisible();
+    await openBookBtn.click();
+
+    // 3. Immediately verify 3D Pop-up Book OPENING animation lifecycle
+    const overlayHost = page.getByTestId('ledger-overlay-host');
+    await expect(overlayHost).toBeVisible();
+
+    // Check 3D perspective / hinge structure and cover/spine
+    const virtualBook = page.getByTestId('virtual-ledger-book');
+    await expect(virtualBook).toBeVisible();
+    await expect(page.getByTestId('book-cover-3d')).toBeVisible();
+    await expect(page.getByTestId('book-spine-crease')).toBeVisible();
+
+    // Capture screenshot: 12-3d-book-open-animation.png during transition
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '12-3d-book-open-animation.png'),
+      fullPage: true,
+    });
+
+    // 4. Verify completion to OPEN state after 650ms animation
+    await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPEN', { timeout: 3000 });
+    await expect(virtualBook).toHaveAttribute('data-animation-state', 'open');
+    await expect(virtualBook).toHaveAttribute('data-mode', 'floor-map');
+
+    // Verify 3D CSS perspective styles applied on the book container
+    const perspectiveStyle = await virtualBook.evaluate((el) => {
+      const computed = window.getComputedStyle(el);
+      return {
+        perspective: computed.perspective || el.style.perspective,
+        transformStyle: computed.transformStyle || el.style.transformStyle,
+        transformOrigin: computed.transformOrigin || el.style.transformOrigin,
+      };
+    });
+    expect(perspectiveStyle.perspective).toMatch(/1400px/);
+    expect(perspectiveStyle.transformStyle).toBe('preserve-3d');
+
+    // Verify full ledger book content: Floor Header, Floor tabs, and Floor Map
+    await expect(virtualBook).toContainText('SỔ QUẢN LÝ ẢO F04');
+    await expect(page.getByTestId('floor-tab-1')).toBeVisible();
+    await expect(page.getByTestId('floor-tab-2')).toBeVisible();
+    await expect(page.getByTestId('floor-tab-3')).toBeVisible();
+
+    // Capture screenshot: 13-3d-book-opened-full-ledger.png
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '13-3d-book-opened-full-ledger.png'),
+      fullPage: true,
+    });
+
+    // 5. Test Gập Sổ (3D) folding transition and smooth unmount
+    const closeBookBtn = page.getByTestId('close-ledger-book-btn');
+    await expect(closeBookBtn).toBeVisible();
+    await expect(closeBookBtn).toContainText('Gập Sổ (3D)');
+
+    await closeBookBtn.click();
+
+    // Verify CLOSING animation state is triggered
+    await expect(overlayHost).toHaveAttribute('data-animation-state', 'CLOSING');
+    await expect(virtualBook).toHaveAttribute('data-animation-state', 'closing');
+
+    // Verify complete smooth unmount after 450ms fold animation
+    await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0, { timeout: 3000 });
+
+    // Verify returned cleanly to 3D Stage
+    await expect(page.getByTestId('canvas-3d-stage')).toBeVisible();
+    await expect(page.getByTestId('three-game-canvas')).toBeVisible();
+    await expect(openBookBtn).toBeVisible();
+
+    // Assert zero console errors, zero page errors, zero external network requests
+    expect(consoleErrors).toEqual([]);
+    expect(pageErrors).toEqual([]);
+    expect(externalRequests).toEqual([]);
+  });
 });
