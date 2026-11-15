@@ -224,6 +224,175 @@ flowchart LR
   pnpm --filter @qlnt/web test
   ```
 
+#### Task 4.3: Màn hình Login Chủ trọ & Đăng ký Diện tích, Số phòng Tòa nhà `[HOÀN TẤT]`
+- **Mục tiêu:** Bổ sung luồng đăng nhập / đăng ký Chủ trọ local-first và modal cấu hình quy mô tòa nhà (1–6 tầng, 1–8 phòng/tầng, preset diện tích 20/25/35 m², tùy chỉnh diện tích & giá từng phòng), đồng bộ động lên HUD, Cảnh 3D Stage và Sổ 2D F04.
+- **File tạo mới & cập nhật:**
+  - `apps/web/src/components/LoginScreen.tsx` (2 tab Đăng nhập / Đăng ký Chủ trọ, Quick Demo Login)
+  - `apps/web/src/components/BuildingSetupModal.tsx` (Cấu hình số tầng, số phòng/tầng, 3 preset diện tích, chỉnh diện tích/giá từng phòng)
+  - `apps/web/src/bridge/ledgerController.ts` & `apps/web/src/bridge/useRendererBridge.ts` (Auth local, `buildRoomSetupDrafts`, `registerOrUpdateBuilding`, tổng diện tích `totalAreaSqm`, bỏ hardcode 4 phòng/tầng)
+  - `apps/web/src/components/Canvas3DStage.tsx`, `apps/web/src/components/LedgerOverlayHost.tsx`, `apps/web/src/App.tsx` (Hiển thị số tầng động, diện tích từng phòng `m²` và tổng diện tích trên HUD)
+- **Lệnh kiểm chứng:**
+  ```bash
+  pnpm turbo run typecheck test build
+  pnpm --filter @qlnt/web test:e2e
+  ```
+
+#### Task 4.4: Tương tác Tòa nhà 3D Trực tiếp (Raycast, Orbit, Zoom) & Thu gọn Drawer Phòng vào Góc `[HOÀN TẤT]`
+- **Mục tiêu:** Cho phép người dùng hover/click trực tiếp lên từng phòng trên mô hình tòa nhà 3D, xoay/zoom camera isometric, và thu nhỏ danh sách phòng & tầng thành Corner Collapsible Drawer ở góc dưới-trái để quan sát trọn vẹn cảnh 3D.
+- **File cập nhật:**
+  - `packages/renderer-3d/src/threeGameRenderer.ts` (Căn giữa tòa nhà quanh `(0, y, 0)`, thêm `pickBuildingRoom`, `setHoveredRoom`, `orbitCamera`, `zoomCamera`, `resetIsometricCamera`)
+  - `apps/web/src/components/Canvas3DStage.tsx` (Pointer events trên `<canvas data-testid="three-game-canvas">`, tooltip `stage-3d-hover-tooltip`, thanh công cụ góc nhìn `btn-3d-zoom-in`/`btn-3d-zoom-out`/`btn-3d-reset-view`, Corner Collapsible Drawer `stage-room-drawer` + `toggle-room-drawer-btn`)
+  - `apps/web/tests/uiAndResponsive.test.ts` & `apps/web/e2e/p1-flows.spec.ts` (Bổ sung unit test điều khiển 3D/drawer và E2E `TC-P1-3D-INTERACT`)
+- **Lệnh kiểm chứng:**
+  ```bash
+  pnpm turbo run typecheck test build
+  pnpm --filter @qlnt/web test:e2e
+  ```
+
+#### Task 4.5: Ghim & Badge Chấm than 3D Đúng Từng Phòng trên Tòa nhà (`P101`–`P304`) `[HOÀN TẤT]`
+- **Mục tiêu:** Khắc phục lỗi badge 3D chồng tại gốc `(0, 2.2, 0)` bằng cách bind `roomId` vào từng mesh phòng 3D, đặt `NoticeBadge` theo mặt tiền từng phòng và chiếu tọa độ `(x, y)` để hiển thị cụm ghim/badge chấm than vàng/đỏ tương tác trực tiếp ngay trên Tòa nhà 3D.
+- **File cập nhật:**
+  - `packages/renderer-3d/src/threeGameRenderer.ts` & `packages/renderer-3d/tests/threeGameRenderer.test.ts` (`bindRoomIds`, `findRoomMesh`, `getRoomBadgeAnchor`, `getProjectedRoomPositions`, tint vàng phòng nợ tiền, unit test `P101`/`P204` tách tọa độ)
+  - `apps/web/src/bridge/ledgerController.ts` (`syncAllToRenderer()` gọi `bindRoomIds` theo `floorIndex` & `roomIndex`)
+  - `apps/web/src/components/Canvas3DStage.tsx` (Lớp `building-3d-pins-layer` với `building-3d-pin-${room_number}`, `building-3d-yellow-badge-${room_number}` mở Trang 1, `building-3d-red-badge-${room_number}` mở Trang 2)
+  - `apps/web/tests/uiAndResponsive.test.ts` & `apps/web/e2e/p1-flows.spec.ts` (Kiểm chứng `P101`, `P201`, `P204`, `P302` tách tọa độ, `P104`/`P304` không có badge, click `building-3d-red-badge-P204` mở `P204` Trang 2)
+- **Lệnh kiểm chứng:**
+  ```bash
+  pnpm turbo run typecheck test build
+  pnpm --filter @qlnt/web test:e2e
+  ```
+
+#### Task 4.6: Chuyển Cảnh Mặt Bằng Tầng 3D Cutaway Isometric & Tương Tác Sổ F04 `[HOÀN TẤT]`
+- **Mục tiêu:** Hiện thực hóa tính năng `QLNT-FEAT-3D-FLOOR-CUTAWAY` lấy cảm hứng từ mô hình 3D Isometric Agent: khi chọn tầng trên tòa nhà hoặc thanh dock, hệ thống chuyển cảnh zoom mượt mà vào mặt bằng tầng 3D Cutaway với tường lửng 1.2m, sàn gỗ phòng ngủ (#8b5a2b), sàn gạch xám hành lang (#cbd5e1), nội thất 3D (giường đơn, bàn làm việc, ghế), avatar chibi khách thuê cho phòng OCCUPIED, badges cảnh báo vàng/đỏ, raycast hover/click mở trực tiếp Sổ F04 và nút quay lại toàn cảnh tòa nhà.
+- **File cập nhật/tạo mới:**
+  - `packages/renderer-3d/src/cutaway/floorCutawayRenderer.ts` (Tạo mới: Dựng toàn bộ mặt bằng tầng 3D Cutaway, nội thất, avatar, badges, raycast picking & hover glow)
+  - `packages/renderer-3d/src/threeGameRenderer.ts` & `packages/renderer-3d/src/index.ts` (`renderFloorCutaway`, `clearFloorCutaway`, `transitionToFloor`, `transitionToBuilding`, `pickFloorRoom`, `setFloorHoveredRoom`)
+  - `packages/renderer-3d/tests/floorCutawayRenderer.test.ts` (11 unit tests kiểm tra scene cutaway, raycast picking, camera transition)
+  - `apps/web/src/bridge/ledgerController.ts` & `apps/web/src/bridge/useRendererBridge.ts` (`viewMode: 'BUILDING' | 'FLOOR_3D'`, `activeFloorIndex`, `selectFloor`, `backToBuilding`, `openRoomDetailFromFloor`)
+  - `apps/web/src/components/Canvas3DStage.tsx` & `apps/web/src/App.tsx` (Thanh dock chuyển tầng ở đáy màn hình `floor-cutaway-dock`, nút `btn-back-to-building` touch target $\ge 44$px, tooltip hover `stage-3d-hover-tooltip`, liên kết đóng sổ 1 chạm về mặt bằng 3D)
+  - `apps/web/e2e/p1-flows.spec.ts` (`TC-P1-FLOOR-CUTAWAY`: Chọn tầng $\to$ Chuyển cảnh Mặt bằng 3D $\to$ Mở Sổ F04 phòng P202 $\to$ Quay lại Toàn cảnh Tòa nhà, chụp ảnh minh chứng `06-3d-floor-cutaway-view.png`)
+  - `packages/shared-types` (Bảo toàn nguyên vẹn 100%, 0 thay đổi)
+- **Lệnh kiểm chứng:**
+  ```bash
+  pnpm turbo run typecheck test build
+  pnpm --filter @qlnt/web test:e2e
+  git -C 4.Du_an/QLNT status --short packages/shared-types # Kết quả rỗng
+  ```
+
+#### Task 4.8: Cánh Cửa Gỗ, Bảng Số Cửa Nét & Bảng Thông Tin Tường Mở Sổ F04 `[HOÀN TẤT]`
+- **Mã tính năng:** `QLNT-FEAT-DOOR-BOARD-INFO-PLAQUE`
+- **Mục tiêu:**
+  1. Gỡ bỏ hoàn toàn số phòng và icon cảnh báo bay lơ lửng trên không trung trong Mặt bằng Tầng 3D (`FLOOR_3D`), giải phóng không gian thông thoáng.
+  2. Bổ sung cánh cửa gỗ tự nhiên (`#9a3412`) mở hé góc ~38° vào bên trong phòng tạo chiều sâu, kèm chi tiết panô và tay nắm kim loại vàng đồng/inox bạc (`#f59e0b` / `#e2e8f0`).
+  3. Bảng số phòng sắc nét (Over-door Room Number Plaque) gắn cố định trên thanh ngang khung cửa mỗi phòng nhìn ra hành lang: canvas texture $512 \times 160$, nền đen ánh kim viền vàng gold, chữ số in hoa đậm nét `bold 84px`.
+  4. Bảng thông tin gắn tường bên phải cửa (Interactive Room Info Plaque): canvas texture $512 \times 320$ hiển thị Mã phòng, Diện tích, Khách thuê, Trạng thái và nút `👉 Mở Sổ F04`.
+  5. Tương tác raycast: hover bảng thông tin làm sáng viền vàng gold, con trỏ pointer và hiển thị Tooltip `Bảng Thông Tin Phòng ${roomCode} · Nhấp để mở Sổ Quản Lý F04`; click bảng thông tin mở thẳng Sổ Quản Lý Phòng F04 của căn phòng đó.
+- **File cập nhật:**
+  - `packages/renderer-3d/src/cutaway/floorCutawayRenderer.ts` & `packages/renderer-3d/src/threeGameRenderer.ts` (Dựng cánh cửa gỗ, bảng số cửa nét, bảng thông tin tường, `pickRoomInfoPlaque`, `setFloorHoveredInfoPlaque`)
+  - `packages/renderer-3d/tests/floorCutawayRenderer.test.ts` (14 unit tests cho cửa gỗ, bảng số, bảng thông tin, raycast, và 0 badge bay lơ lửng)
+  - `apps/web/src/components/Canvas3DStage.tsx` & `apps/web/tests/uiAndResponsive.test.ts` (Gỡ bỏ `floor-3d-pins-layer`, xử lý hover/click bảng thông tin tường mở F04, unit tests 27/27 PASS)
+  - `apps/web/e2e/p1-flows.spec.ts` (Cập nhật `TC-P1-FLOOR-CUTAWAY` xác minh không còn floating badge HTML, hover/click bảng thông tin phòng P202 mở F04, re-capture screenshot `06-3d-floor-cutaway-view.png`)
+  - `04-van-hanh/BAO_CAO_KIEM_THU_PLAYWRIGHT_P1.md` (Cập nhật kết quả kiểm thử 6/6 E2E suites PASS)
+  - `packages/shared-types` (Bảo toàn tuyệt đối 100%, 0 thay đổi)
+- **Lệnh kiểm chứng:**
+  ```bash
+  pnpm turbo run typecheck test build
+  pnpm --filter @qlnt/web test:e2e
+  git -C 4.Du_an/QLNT status --short packages/shared-types # Kết quả rỗng
+  ```
+
+#### Task 4.9: Điều Chỉnh Dấu Chấm Than Cảnh Báo Chuẩn Xác Vào Đúng Phòng Khi Mở Tầng 3D `[HOÀN TẤT]`
+- **Mã tính năng:** `QLNT-FEAT-PRECISE-FLOOR-NOTICE-BADGES`
+- **Mục tiêu:**
+  1. Khắc phục triệt để lỗi dấu chấm than cảnh báo bay lệch phòng/lệch tầng khi mở mặt bằng tầng 3D: quản lý ẩn sạch toàn bộ `badges` cấp tòa nhà trong `transitionToFloor`, khôi phục trong `transitionToBuilding`.
+  2. Khởi tạo `NoticeBadge` 3D trực tiếp cho từng phòng có cảnh báo trong `floorCutawayRenderer`, neo tại lối vào phòng độ cao $Y = 1.7\text{m}$ (trên đỉnh cửa): chấm than vàng (`noticeKind = 'PAYMENT'`) ở $X = -0.25$ hoặc $0$, chấm than đỏ (`noticeKind = 'DEVICE'`) ở $X = +0.25$ hoặc $0$. Cập nhật bobbing animation và giải phóng sạch khi dispose.
+  3. Cung cấp phương thức `pickFloorNoticeBadge(ndcX, ndcY)` raycast trúng dấu chấm than trong tầng.
+  4. Trong `Canvas3DStage.tsx`: Rê chuột trúng chấm than hiển thị tooltip tương ứng; click chấm than vàng mở thẳng Sổ F04 Trang 1 (Hóa đơn), click chấm than đỏ mở thẳng Sổ F04 Trang 2 (Thiết bị).
+  5. Cập nhật Playwright E2E trong `TC-P1-FLOOR-CUTAWAY`: Kiểm tra mở Tầng 2 thì P201 có chấm than vàng, P204 có chấm than đỏ, P203 không có chấm than, không có chấm than của Tầng 1/Tầng 3; click chấm than P201 mở ngay Sổ F04 Trang 1; chụp ảnh minh chứng `07-floor-cutaway-notice-badges.png`.
+- **File cập nhật:**
+  - `packages/renderer-3d/src/threeGameRenderer.ts` & `packages/renderer-3d/src/cutaway/floorCutawayRenderer.ts`
+  - `packages/renderer-3d/tests/floorCutawayRenderer.test.ts` & `threeGameRenderer.test.ts`
+  - `apps/web/src/components/Canvas3DStage.tsx` & `apps/web/tests/uiAndResponsive.test.ts`
+  - `apps/web/e2e/p1-flows.spec.ts`
+  - `04-van-hanh/BAO_CAO_KIEM_THU_PLAYWRIGHT_P1.md`
+  - `01-quan-ly/KE_HOACH_CHAM_THAN_CANH_BAO_MAT_BANG_TANG_3D.md`
+  - `packages/shared-types` (Bảo toàn tuyệt đối 100%, 0 thay đổi)
+- **Lệnh kiểm chứng:**
+  ```bash
+  pnpm turbo run typecheck test build
+  pnpm --filter @qlnt/web test:e2e
+  git -C 4.Du_an/QLNT status --short packages/shared-types # Kết quả rỗng
+  ```
+
+#### Task 4.7: Chọn Theo Tầng Ở Mô Hình Tòa Nhà & Ẩn Khối Vuông Ở Hành Lang Khi Mở Mặt Bằng Tầng `[HOÀN TẤT]`
+- **Mã tính năng:** `QLNT-FEAT-FLOOR-PICK-CLEAN-CORRIDOR`
+- **Mục tiêu:**
+  1. Ở góc nhìn Toàn cảnh Tòa nhà (`viewMode === 'BUILDING'`):
+     - Tinh gọn mặt tiền tòa nhà 3D: không hiển thị badge hay nhãn riêng lẻ từng phòng rải rác ngoài ngoại thất.
+     - Rê chuột vào bất kỳ khối phòng nào thuộc tầng $f$: Toàn bộ các khối phòng của tầng $f$ cùng phát sáng màu vàng ấm (`setHoveredFloor(floorIndex)`), Tooltip Tầng hiển thị: `Tầng ${f+1} · ${số phòng} phòng · ${diện tích} m² · Nhấn để mở Mặt bằng 3D Tầng`.
+     - Click chuột vào bất kỳ khối phòng nào của tầng $f$: Chuyển cảnh trực tiếp vào Mặt bằng 3D của tầng đó (`selectFloor(f)`), không mở modal F04 phòng riêng lẻ từ toàn cảnh.
+  2. Ở góc nhìn Mặt bằng Tầng 3D (`viewMode === 'FLOOR_3D'`):
+     - Trong `transitionToFloor(floorIndex)`: Ẩn 100% các khối vuông tòa nhà (`mesh.visible = false` cho toàn bộ `buildingMeshes`), đảm bảo hành lang trung tâm và cửa thang máy hoàn toàn thông thoáng, sạch sẽ, không bị khối hộp building che chắn.
+     - Trong `transitionToBuilding()`: Khôi phục hiển thị lại toàn bộ các khối vuông tòa nhà (`mesh.visible = true`).
+- **File cập nhật:**
+  - `packages/renderer-3d/src/threeGameRenderer.ts` & `packages/renderer-3d/tests/threeGameRenderer.test.ts` (`transitionToFloor` ẩn 100% buildingMeshes, `transitionToBuilding` khôi phục, bổ sung `setHoveredFloor(floorIndex: number | null)`)
+  - `apps/web/src/components/Canvas3DStage.tsx` (Pointer move bắt tầng, highlight cả tầng, hiển thị tooltip tầng; pointer up click trực tiếp chuyển tầng cutaway; không render badge/pin phòng ở BUILDING mode)
+  - `apps/web/tests/uiAndResponsive.test.ts` (Unit tests cho hover cả tầng, click chọn tầng cutaway và dọn dẹp facade)
+  - `apps/web/e2e/p1-flows.spec.ts` (Cập nhật `TC-P1-3D-INTERACT` kiểm tra facade sạch sẽ; `TC-P1-FLOOR-CUTAWAY` hover và click trực tiếp canvas 3D Tầng 2 để chuyển cảnh cutaway sạch hành lang, cập nhật screenshot `06-3d-floor-cutaway-view.png`)
+  - `04-van-hanh/BAO_CAO_KIEM_THU_PLAYWRIGHT_P1.md` (Cập nhật kết quả kiểm thử 6/6 test suites PASS)
+  - `packages/shared-types` (Bảo toàn tuyệt đối 100%, 0 thay đổi)
+- **Lệnh kiểm chứng:**
+  ```bash
+  pnpm turbo run typecheck test build
+  pnpm --filter @qlnt/web test:e2e
+  git -C 4.Du_an/QLNT status --short packages/shared-types # Kết quả rỗng
+  ```
+
+#### Task 4.8: Cánh Cửa Gỗ, Bảng Số Cửa Nét & Bảng Thông Tin Tường Mở Sổ F04 `[HOÀN TẤT]`
+- **Mã tính năng:** `QLNT-FEAT-DOOR-BOARD-INFO-PLAQUE`
+- **Mục tiêu:**
+  1. Gỡ bỏ hoàn toàn số phòng và icon cảnh báo bay lơ lửng trên không trung trong Mặt bằng Tầng 3D (`FLOOR_3D`), giải phóng không gian thông thoáng.
+  2. Bổ sung cánh cửa gỗ tự nhiên (`#9a3412`) mở hé góc ~38° vào bên trong phòng tạo chiều sâu, kèm chi tiết panô và tay nắm kim loại vàng đồng/inox bạc (`#f59e0b` / `#e2e8f0`).
+  3. Bảng số phòng sắc nét (Over-door Room Number Plaque) gắn cố định trên thanh ngang khung cửa mỗi phòng nhìn ra hành lang: canvas texture $512 \times 160$, nền đen ánh kim viền vàng gold, chữ số in hoa đậm nét `bold 84px`.
+  4. Bảng thông tin gắn tường bên phải cửa (Interactive Room Info Plaque): canvas texture $512 \times 320$ hiển thị Mã phòng, Diện tích, Khách thuê, Trạng thái và nút `👉 Mở Sổ F04`.
+  5. Tương tác raycast: hover bảng thông tin làm sáng viền vàng gold, con trỏ pointer và hiển thị Tooltip `Bảng Thông Tin Phòng ${roomCode} · Nhấp để mở Sổ Quản Lý F04`; click bảng thông tin mở thẳng Sổ Quản Lý Phòng F04 của căn phòng đó.
+- **File cập nhật:**
+  - `packages/renderer-3d/src/cutaway/floorCutawayRenderer.ts` & `packages/renderer-3d/src/threeGameRenderer.ts` (Dựng cánh cửa gỗ, bảng số cửa nét, bảng thông tin tường, `pickRoomInfoPlaque`, `setFloorHoveredInfoPlaque`)
+  - `packages/renderer-3d/tests/floorCutawayRenderer.test.ts` (14 unit tests cho cửa gỗ, bảng số, bảng thông tin, raycast, và 0 badge bay lơ lửng)
+  - `apps/web/src/components/Canvas3DStage.tsx` & `apps/web/tests/uiAndResponsive.test.ts` (Gỡ bỏ `floor-3d-pins-layer`, xử lý hover/click bảng thông tin tường mở F04, unit tests 27/27 PASS)
+  - `apps/web/e2e/p1-flows.spec.ts` (Cập nhật `TC-P1-FLOOR-CUTAWAY` xác minh không còn floating badge HTML, hover/click bảng thông tin phòng P202 mở F04, re-capture screenshot `06-3d-floor-cutaway-view.png`)
+  - `04-van-hanh/BAO_CAO_KIEM_THU_PLAYWRIGHT_P1.md` (Cập nhật kết quả kiểm thử 6/6 E2E suites PASS)
+  - `packages/shared-types` (Bảo toàn tuyệt đối 100%, 0 thay đổi)
+- **Lệnh kiểm chứng:**
+  ```bash
+  pnpm turbo run typecheck test build
+  pnpm --filter @qlnt/web test:e2e
+  git -C 4.Du_an/QLNT status --short packages/shared-types # Kết quả rỗng
+  ```
+
+#### Task 4.9: Điều Chỉnh Dấu Chấm Than Cảnh Báo Chuẩn Xác Vào Đúng Phòng Khi Mở Tầng 3D `[HOÀN TẤT]`
+- **Mã tính năng:** `QLNT-FEAT-PRECISE-FLOOR-NOTICE-BADGES`
+- **Mục tiêu:**
+  1. Khắc phục triệt để lỗi dấu chấm than cảnh báo bay lệch phòng/lệch tầng khi mở mặt bằng tầng 3D: quản lý ẩn sạch toàn bộ `badges` cấp tòa nhà trong `transitionToFloor`, khôi phục trong `transitionToBuilding`.
+  2. Khởi tạo `NoticeBadge` 3D trực tiếp cho từng phòng có cảnh báo trong `floorCutawayRenderer`, neo tại lối vào phòng độ cao $Y = 1.7\text{m}$ (trên đỉnh cửa): chấm than vàng (`noticeKind = 'PAYMENT'`) ở $X = -0.25$ hoặc $0$, chấm than đỏ (`noticeKind = 'DEVICE'`) ở $X = +0.25$ hoặc $0$. Cập nhật bobbing animation và giải phóng sạch khi dispose.
+  3. Cung cấp phương thức `pickFloorNoticeBadge(ndcX, ndcY)` raycast trúng dấu chấm than trong tầng.
+  4. Trong `Canvas3DStage.tsx`: Rê chuột trúng chấm than hiển thị tooltip tương ứng; click chấm than vàng mở thẳng Sổ F04 Trang 1 (Hóa đơn), click chấm than đỏ mở thẳng Sổ F04 Trang 2 (Thiết bị).
+  5. Cập nhật Playwright E2E trong `TC-P1-FLOOR-CUTAWAY`: Kiểm tra mở Tầng 2 thì P201 có chấm than vàng, P204 có chấm than đỏ, P203 không có chấm than, không có chấm than của Tầng 1/Tầng 3; click chấm than P201 mở ngay Sổ F04 Trang 1; chụp ảnh minh chứng `07-floor-cutaway-notice-badges.png`.
+- **File cập nhật:**
+  - `packages/renderer-3d/src/threeGameRenderer.ts` & `packages/renderer-3d/src/cutaway/floorCutawayRenderer.ts`
+  - `packages/renderer-3d/tests/floorCutawayRenderer.test.ts` & `threeGameRenderer.test.ts`
+  - `apps/web/src/components/Canvas3DStage.tsx` & `apps/web/tests/uiAndResponsive.test.ts`
+  - `apps/web/e2e/p1-flows.spec.ts`
+  - `04-van-hanh/BAO_CAO_KIEM_THU_PLAYWRIGHT_P1.md`
+  - `01-quan-ly/KE_HOACH_CHAM_THAN_CANH_BAO_MAT_BANG_TANG_3D.md`
+  - `packages/shared-types` (Bảo toàn tuyệt đối 100%, 0 thay đổi)
+- **Lệnh kiểm chứng:**
+  ```bash
+  pnpm turbo run typecheck test build
+  pnpm --filter @qlnt/web test:e2e
+  git -C 4.Du_an/QLNT status --short packages/shared-types # Kết quả rỗng
+  ```
+
 ---
 
 ### Pha 5: Cloud Sync & Worker
