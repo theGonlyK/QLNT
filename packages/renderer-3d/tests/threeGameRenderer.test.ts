@@ -816,7 +816,29 @@ describe('ThreeGameRenderer — per-room NoticeBadge positioning, bindRoomIds & 
     return mappings;
   }
 
-  it('places NoticeBadge for P101 and P204 at distinct (x, y, z) coordinates matching each room mesh front face', async () => {
+  it('does not spawn exterior NoticeBadge in main scene for room notices or broken devices', async () => {
+    const rClean = new ThreeGameRenderer({ canvas: document.createElement('canvas'), width: 800, height: 600 });
+    await rClean.renderBuilding({
+      propertyId: 'p-clean-test',
+      totalFloors: 3,
+      roomsPerFloor: 4,
+      position: { x: 0, y: 0, z: 0 },
+    });
+    rClean.bindRoomIds([{ roomId: 'r-1', floorIndex: 0, roomIndex: 0 }]);
+    rClean.setRoomNotice('r-1', 'PAYMENT_DUE');
+    rClean.setDeviceStatus('r-1', 'd-1', 'BROKEN');
+
+    // Kiểm tra scene chính không có bất kỳ NoticeBadge nào
+    const exteriorBadges = rClean.scene.children.filter((c) => c.name.startsWith('NoticeBadge_'));
+    expect(exteriorBadges.length).toBe(0);
+
+    // Nhưng khối phòng vẫn đổi màu cảnh báo
+    const mesh = (rClean as any).findRoomMesh('r-1');
+    expect(mesh.material.color.getHex()).toBe(0xef4444);
+    rClean.dispose();
+  });
+
+  it('updates room material colors without spawning exterior NoticeBadge for P101 and P204', async () => {
     await r.renderBuilding(buildingData);
     const mappings = buildMappings();
     r.bindRoomIds(mappings);
@@ -827,8 +849,11 @@ describe('ThreeGameRenderer — per-room NoticeBadge positioning, bindRoomIds & 
     const p101Badge = r.getNoticeBadge('room:uuid-p101');
     const p204Badge = r.getNoticeBadge('device:uuid-p204:ac');
 
-    expect(p101Badge).toBeDefined();
-    expect(p204Badge).toBeDefined();
+    // No exterior badges in scene or badges map
+    expect(p101Badge).toBeUndefined();
+    expect(p204Badge).toBeUndefined();
+    const exteriorBadges = r.scene.children.filter((c) => c.name.startsWith('NoticeBadge_'));
+    expect(exteriorBadges).toHaveLength(0);
 
     const p101Mesh = r.findRoomMesh('uuid-p101')!;
     const p204Mesh = r.findRoomMesh('uuid-p204')!;
@@ -837,20 +862,6 @@ describe('ThreeGameRenderer — per-room NoticeBadge positioning, bindRoomIds & 
     expect(p101Mesh.userData['legacyRoomId']).toBe('room-1');
     expect(p101Mesh.userData['roomNumber']).toBe('P101');
     expect(p204Mesh.userData['roomNumber']).toBe('P204');
-
-    // Distinct coordinates between P101 (floor 0, room 0) and P204 (floor 1, room 3)
-    expect(p101Badge!.position.x).not.toBeCloseTo(p204Badge!.position.x, 2);
-    expect(p101Badge!.position.y).not.toBeCloseTo(p204Badge!.position.y, 2);
-
-    // Back-row room P101 stays on top at mesh.position.z
-    expect(p101Badge!.position.x).toBeCloseTo(p101Mesh.position.x - 0.18, 4);
-    expect(p101Badge!.position.y).toBeCloseTo(p101Mesh.position.y + 0.78, 4);
-    expect(p101Badge!.position.z).toBeCloseTo(p101Mesh.position.z, 4);
-
-    // Front-row room P204 anchors in front
-    expect(p204Badge!.position.x).toBeCloseTo(p204Mesh.position.x + 0.18, 4);
-    expect(p204Badge!.position.y).toBeCloseTo(p204Mesh.position.y + 0.25, 4);
-    expect(p204Badge!.position.z).toBeCloseTo(p204Mesh.position.z + 0.68, 4);
 
     // Room material colors: P101 yellow tint (#f59e0b), P204 red (#ef4444), P104 unchanged
     const p104Mesh = r.findRoomMesh('uuid-p104')!;
@@ -943,7 +954,7 @@ describe('ThreeGameRenderer — per-room NoticeBadge positioning, bindRoomIds & 
     expect(frontAnchor.z).toBeGreaterThan(frontMesh.position.z);
   });
 
-  it('repositions existing badges and updates mesh alert status when building layout is re-rendered', async () => {
+  it('preserves room mesh alert status without exterior badges when building layout is re-rendered', async () => {
     const r2 = new ThreeGameRenderer({ canvas: document.createElement('canvas'), width: 800, height: 600 });
     await r2.renderBuilding({
       propertyId: 'p-reposition-test',
@@ -959,7 +970,9 @@ describe('ThreeGameRenderer — per-room NoticeBadge positioning, bindRoomIds & 
     r2.setRoomNotice('room-target', 'PAYMENT_DUE');
 
     const badgeBefore = r2.getNoticeBadge('room:room-target');
-    expect(badgeBefore).toBeDefined();
+    expect(badgeBefore).toBeUndefined();
+    const targetMeshBefore = (r2 as any).findRoomMesh('room-target');
+    expect((targetMeshBefore.material as THREE.MeshLambertMaterial).color.getHex()).toBe(0xf59e0b);
 
     // Re-render building at a different position
     await r2.renderBuilding({
@@ -974,7 +987,14 @@ describe('ThreeGameRenderer — per-room NoticeBadge positioning, bindRoomIds & 
     ]);
 
     const badgeAfter = r2.getNoticeBadge('room:room-target');
-    expect(badgeAfter).toBeDefined();
-    expect(badgeAfter!.position.x).toBeGreaterThan(8);
+    expect(badgeAfter).toBeUndefined();
+    const targetMeshAfter = (r2 as any).findRoomMesh('room-target');
+    expect(targetMeshAfter).toBeDefined();
+    expect(targetMeshAfter.position.x).toBeGreaterThan(8);
+    expect((targetMeshAfter.material as THREE.MeshLambertMaterial).color.getHex()).toBe(0xf59e0b);
+
+    const exteriorBadges = r2.scene.children.filter((c) => c.name.startsWith('NoticeBadge_'));
+    expect(exteriorBadges).toHaveLength(0);
+    r2.dispose();
   });
 });

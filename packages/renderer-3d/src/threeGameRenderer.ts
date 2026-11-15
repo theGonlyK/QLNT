@@ -100,6 +100,12 @@ export class ThreeGameRenderer implements IGameRenderer {
   /** Map of badgeKey → NoticeBadge */
   private readonly badges = new Map<string, NoticeBadge>();
 
+  /** Map of roomId → RoomNoticeType */
+  private readonly roomNotices = new Map<string, RoomNoticeType>();
+
+  /** Set of broken device keys: `${roomId}:${deviceId}` */
+  private readonly brokenDevices = new Set<string>();
+
   /** Procedural building room meshes for raycasting */
   private buildingMeshes: THREE.Mesh[] = [];
 
@@ -182,6 +188,13 @@ export class ThreeGameRenderer implements IGameRenderer {
     this.buildingMeshes = [];
     this.buildingMeshMap.clear();
     this.hoveredRoomKey = null;
+
+    // Ensure no exterior badges remain in the scene
+    for (const badge of this.badges.values()) {
+      this.scene.remove(badge);
+      badge.dispose();
+    }
+    this.badges.clear();
 
     const { totalFloors, roomsPerFloor, position, scale, propertyId } = buildingData;
     const sx = scale?.x ?? 1;
@@ -420,6 +433,13 @@ export class ThreeGameRenderer implements IGameRenderer {
         candidates.add(mesh.userData['legacyRoomId']);
       }
     }
+    for (const key of this.brokenDevices) {
+      for (const candidate of candidates) {
+        if (key.startsWith(`${candidate}:`)) {
+          return true;
+        }
+      }
+    }
     for (const key of this.badges.keys()) {
       for (const candidate of candidates) {
         if (key.startsWith(`device:${candidate}:`)) {
@@ -442,6 +462,10 @@ export class ThreeGameRenderer implements IGameRenderer {
       }
     }
     for (const candidate of candidates) {
+      const notice = this.roomNotices.get(candidate);
+      if (notice && notice !== 'NONE') {
+        return true;
+      }
       if (this.badges.has(`room:${candidate}`)) {
         return true;
       }
@@ -498,54 +522,40 @@ export class ThreeGameRenderer implements IGameRenderer {
     deviceId: string,
     status: DeviceStatus,
   ): void {
-    // 1. Manage 3D Notice Badge for broken device
-    const badgeKey = `device:${roomId}:${deviceId}`;
+    const key = `${roomId}:${deviceId}`;
     if (status === 'BROKEN') {
-      const anchor = this.getRoomBadgeAnchor(roomId, 'DEVICE_BROKEN');
-      let badge = this.badges.get(badgeKey);
-      if (!badge) {
-        badge = new NoticeBadge('BROKEN', anchor);
-        this.scene.add(badge);
-        this.badges.set(badgeKey, badge);
-      } else {
-        badge.setType('BROKEN');
-        badge.setAnchorPosition(anchor.x, anchor.y, anchor.z);
-      }
+      this.brokenDevices.add(key);
     } else {
-      const badge = this.badges.get(badgeKey);
-      if (badge) {
-        this.scene.remove(badge);
-        badge.dispose();
-        this.badges.delete(badgeKey);
-      }
+      this.brokenDevices.delete(key);
     }
 
-    // 2. Update room material tint
+    // Clear any exterior badge if present
+    const badgeKey = `device:${roomId}:${deviceId}`;
+    const badge = this.badges.get(badgeKey);
+    if (badge) {
+      this.scene.remove(badge);
+      badge.dispose();
+      this.badges.delete(badgeKey);
+    }
+
+    // Update room material tint
     this.updateRoomMeshColor(roomId);
   }
 
   setRoomNotice(roomId: string, type: RoomNoticeType): void {
-    const badgeKey = `room:${roomId}`;
     if (type === 'NONE') {
-      const badge = this.badges.get(badgeKey);
-      if (badge) {
-        this.scene.remove(badge);
-        badge.dispose();
-        this.badges.delete(badgeKey);
-      }
-      this.updateRoomMeshColor(roomId);
-      return;
+      this.roomNotices.delete(roomId);
+    } else {
+      this.roomNotices.set(roomId, type);
     }
 
-    const anchor = this.getRoomBadgeAnchor(roomId, 'ROOM_NOTICE');
-    let badge = this.badges.get(badgeKey);
-    if (!badge) {
-      badge = new NoticeBadge(type, anchor);
-      this.scene.add(badge);
-      this.badges.set(badgeKey, badge);
-    } else {
-      badge.setType(type);
-      badge.setAnchorPosition(anchor.x, anchor.y, anchor.z);
+    // Clear any exterior badge if present
+    const badgeKey = `room:${roomId}`;
+    const badge = this.badges.get(badgeKey);
+    if (badge) {
+      this.scene.remove(badge);
+      badge.dispose();
+      this.badges.delete(badgeKey);
     }
 
     this.updateRoomMeshColor(roomId);
@@ -1043,6 +1053,8 @@ export class ThreeGameRenderer implements IGameRenderer {
       badge.dispose();
     }
     this.badges.clear();
+    this.roomNotices.clear();
+    this.brokenDevices.clear();
 
     for (const controller of this.avatarControllers.values()) {
       controller.dispose();
