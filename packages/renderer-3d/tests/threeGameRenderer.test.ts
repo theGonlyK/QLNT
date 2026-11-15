@@ -432,3 +432,455 @@ describe('ThreeGameRenderer — dispose', () => {
     expect(r.scene.children.length).toBe(0);
   });
 });
+
+describe('ThreeGameRenderer — 3D interaction, raycast, hover & camera controls', () => {
+  let r: ThreeGameRenderer;
+
+  beforeEach(() => {
+    r = new ThreeGameRenderer({ width: 800, height: 600 });
+  });
+
+  afterEach(() => r.dispose());
+
+  it('renderBuilding centers procedural building around x = 0 and sets room userData', async () => {
+    await r.renderBuilding(buildingData);
+    const meshes = r.scene.children.filter(
+      (c): c is THREE.Mesh =>
+        c instanceof THREE.Mesh && c.userData['type'] === 'building',
+    );
+    expect(meshes.length).toBe(12);
+
+    const avgX = meshes.reduce((sum, m) => sum + m.position.x, 0) / meshes.length;
+    expect(avgX).toBeCloseTo(0, 5);
+
+    const first = meshes.find(
+      (m) => m.userData['floor'] === 0 && m.userData['room'] === 0,
+    );
+    expect(first?.userData['roomId']).toBe('room-1');
+  });
+
+  it('renderBuilding arranges rooms in 3D grid along both X and Z axes when blockGrid is provided', async () => {
+    await r.renderBuilding({
+      propertyId: 'p-grid-test',
+      totalFloors: 3,
+      roomsPerFloor: 4,
+      position: { x: 0, y: 0, z: 0 },
+      blockGrid: { cols: 2, rows: 2 },
+    } as any);
+
+    const meshes = (r as any).buildingMeshes;
+    expect(meshes.length).toBe(12);
+
+    // Kiểm tra có ít nhất 2 giá trị z khác nhau (thể hiện 2 hàng phòng theo chiều sâu)
+    const zPositions = new Set(meshes.map((m: any) => Math.round(m.position.z * 100) / 100));
+    expect(zPositions.size).toBeGreaterThanOrEqual(2);
+  });
+
+  it('supports setBuildingBlockShape and getBuildingBlockShape', () => {
+    r.setBuildingBlockShape(3, 4);
+    expect(r.getBuildingBlockShape()).toEqual({ cols: 3, rows: 4 });
+  });
+
+  it('renders presets TOWER_2x2x6, CCMN_3x2x4, and CUBE_3x3x3 with precise 3D geometry and corridor gaps', async () => {
+    // 1. TOWER_2x2x6 (2 cols, 2 rows, 6 floors = 24 rooms)
+    await r.renderBuilding({
+      propertyId: 'tower-test',
+      totalFloors: 6,
+      roomsPerFloor: 4,
+      position: { x: 0, y: 0, z: 0 },
+      blockGrid: { cols: 2, rows: 2 },
+    } as any);
+
+    let meshes = (r as any).buildingMeshes as THREE.Mesh[];
+    expect(meshes.length).toBe(24);
+    let avgX = meshes.reduce((s, m) => s + m.position.x, 0) / meshes.length;
+    let avgZ = meshes.reduce((s, m) => s + m.position.z, 0) / meshes.length;
+    expect(avgX).toBeCloseTo(0, 5);
+    expect(avgZ).toBeCloseTo(0, 5);
+
+    // Check corridor gap along Z is 0.25 (row step = 1.0 + 0.25 = 1.25)
+    const zSorted = Array.from(new Set(meshes.map((m) => Math.round(m.position.z * 1000) / 1000))).sort((a, b) => a - b);
+    expect(zSorted.length).toBe(2);
+    expect(zSorted[1]! - zSorted[0]!).toBeCloseTo(1.25, 3);
+
+    // Check gapX is 0.1 (col step = 1.0 + 0.10 = 1.10)
+    const xSorted = Array.from(new Set(meshes.map((m) => Math.round(m.position.x * 1000) / 1000))).sort((a, b) => a - b);
+    expect(xSorted.length).toBe(2);
+    expect(xSorted[1]! - xSorted[0]!).toBeCloseTo(1.10, 3);
+
+    // 2. CUBE_3x3x3 (3 cols, 3 rows, 3 floors = 27 rooms)
+    await r.renderBuilding({
+      propertyId: 'cube-test',
+      totalFloors: 3,
+      roomsPerFloor: 9,
+      position: { x: 0, y: 0, z: 0 },
+      blockGrid: { cols: 3, rows: 3 },
+    } as any);
+
+    meshes = (r as any).buildingMeshes as THREE.Mesh[];
+    expect(meshes.length).toBe(27);
+    avgX = meshes.reduce((s, m) => s + m.position.x, 0) / meshes.length;
+    avgZ = meshes.reduce((s, m) => s + m.position.z, 0) / meshes.length;
+    expect(avgX).toBeCloseTo(0, 5);
+    expect(avgZ).toBeCloseTo(0, 5);
+
+    const cubeZ = Array.from(new Set(meshes.map((m) => Math.round(m.position.z * 1000) / 1000))).sort((a, b) => a - b);
+    expect(cubeZ.length).toBe(3);
+    expect(cubeZ[1]! - cubeZ[0]!).toBeCloseTo(1.25, 3);
+    expect(cubeZ[2]! - cubeZ[1]!).toBeCloseTo(1.25, 3);
+
+    // 3. CCMN_3x2x4 (3 cols, 2 rows, 4 floors = 24 rooms)
+    await r.renderBuilding({
+      propertyId: 'ccmn-test',
+      totalFloors: 4,
+      roomsPerFloor: 6,
+      position: { x: 0, y: 0, z: 0 },
+      blockGrid: { cols: 3, rows: 2 },
+    } as any);
+
+    meshes = (r as any).buildingMeshes as THREE.Mesh[];
+    expect(meshes.length).toBe(24);
+    avgX = meshes.reduce((s, m) => s + m.position.x, 0) / meshes.length;
+    avgZ = meshes.reduce((s, m) => s + m.position.z, 0) / meshes.length;
+    expect(avgX).toBeCloseTo(0, 5);
+    expect(avgZ).toBeCloseTo(0, 5);
+  });
+
+  it('getRoomBadgeAnchor returns THREE.Vector3 on visible exterior face with slot / kind support', async () => {
+    await r.renderBuilding(buildingData);
+    const anchorNotice = r.getRoomBadgeAnchor('room-1', 'ROOM_NOTICE');
+    const anchorBroken = r.getRoomBadgeAnchor('room-1', 'DEVICE_BROKEN');
+    const anchorSlot0 = r.getRoomBadgeAnchor('room-1', 0);
+    const anchorSlot1 = r.getRoomBadgeAnchor('room-1', 1);
+
+    expect(anchorNotice).toBeInstanceOf(THREE.Vector3);
+    expect(anchorBroken).toBeInstanceOf(THREE.Vector3);
+
+    const mesh = r.findRoomMesh('room-1')!;
+    expect(anchorNotice.x).toBeCloseTo(mesh.position.x - 0.18, 4);
+    expect(anchorNotice.y).toBeCloseTo(mesh.position.y + 0.15, 4);
+    expect(anchorNotice.z).toBeCloseTo(mesh.position.z + 0.72, 4);
+
+    expect(anchorBroken.x).toBeCloseTo(mesh.position.x + 0.18, 4);
+    expect(anchorSlot0.x).toBeCloseTo(anchorNotice.x, 4);
+    expect(anchorSlot1.x).toBeCloseTo(anchorBroken.x, 4);
+
+    // Missing room fallback
+    const fallback = r.getRoomBadgeAnchor('unknown-room-id');
+    expect(fallback).toBeInstanceOf(THREE.Vector3);
+    expect(fallback.y).toBe(2.2);
+  });
+
+  it('renderBuilding assigns distinct colors across floors', async () => {
+    await r.renderBuilding(buildingData);
+    const floor0 = r.scene.children.find(
+      (c): c is THREE.Mesh =>
+        c instanceof THREE.Mesh &&
+        c.userData['type'] === 'building' &&
+        c.userData['floor'] === 0,
+    );
+    const floor1 = r.scene.children.find(
+      (c): c is THREE.Mesh =>
+        c instanceof THREE.Mesh &&
+        c.userData['type'] === 'building' &&
+        c.userData['floor'] === 1,
+    );
+    expect(floor0).toBeDefined();
+    expect(floor1).toBeDefined();
+    const mat0 = floor0!.material as THREE.MeshLambertMaterial;
+    const mat1 = floor1!.material as THREE.MeshLambertMaterial;
+    expect(mat0.color.getHex()).not.toBe(mat1.color.getHex());
+  });
+
+  it('pickBuildingRoom returns room info when ray hits a room and null when outside', async () => {
+    await r.renderBuilding(buildingData);
+
+    const hit = r.pickBuildingRoom(0, 0);
+    expect(hit).not.toBeNull();
+    expect(typeof hit?.floorIndex).toBe('number');
+    expect(typeof hit?.roomIndex).toBe('number');
+    expect(hit?.roomId).toMatch(/^room-\d+$/);
+
+    const miss = r.pickBuildingRoom(1, 1);
+    expect(miss).toBeNull();
+  });
+
+  it('setHoveredRoom highlights target room emissive and resets previous room', async () => {
+    await r.renderBuilding(buildingData);
+
+    r.setHoveredRoom(0, 1);
+    const room01 = r.scene.children.find(
+      (c): c is THREE.Mesh =>
+        c instanceof THREE.Mesh &&
+        c.userData['type'] === 'building' &&
+        c.userData['floor'] === 0 &&
+        c.userData['room'] === 1,
+    )!;
+    const mat01 = room01.material as THREE.MeshLambertMaterial;
+    expect(mat01.emissive.getHex()).not.toBe(0x000000);
+
+    r.setHoveredRoom(1, 2);
+    const room12 = r.scene.children.find(
+      (c): c is THREE.Mesh =>
+        c instanceof THREE.Mesh &&
+        c.userData['type'] === 'building' &&
+        c.userData['floor'] === 1 &&
+        c.userData['room'] === 2,
+    )!;
+    const mat12 = room12.material as THREE.MeshLambertMaterial;
+    expect(mat01.emissive.getHex()).toBe(0x000000);
+    expect(mat12.emissive.getHex()).not.toBe(0x000000);
+
+    r.setHoveredRoom(null, null);
+    expect(mat12.emissive.getHex()).toBe(0x000000);
+  });
+
+  it('orbitCamera rotates camera around Y axis while keeping elevation and distance', () => {
+    const initialPos = r.camera.position.clone();
+    const initialDist = initialPos.length();
+
+    r.orbitCamera(Math.PI / 4);
+
+    expect(r.camera.position.y).toBeCloseTo(initialPos.y, 4);
+    expect(r.camera.position.length()).toBeCloseTo(initialDist, 4);
+    expect(r.camera.position.x).not.toBeCloseTo(initialPos.x, 2);
+  });
+
+  it('zoomCamera clamps zoom between 0.6 and 2.5', () => {
+    r.zoomCamera(1.5);
+    expect(r.camera.zoom).toBeCloseTo(1.5, 4);
+
+    r.zoomCamera(10);
+    expect(r.camera.zoom).toBe(2.5);
+
+    r.zoomCamera(0.1);
+    expect(r.camera.zoom).toBe(0.6);
+  });
+
+  it('resetIsometricCamera restores default 45°/35.264° isometric position and zoom = 1', () => {
+    const defaultPos = r.camera.position.clone();
+    r.orbitCamera(Math.PI / 3);
+    r.zoomCamera(1.8);
+
+    r.resetIsometricCamera();
+
+    expect(r.camera.zoom).toBe(1);
+    expect(r.camera.position.x).toBeCloseTo(defaultPos.x, 4);
+    expect(r.camera.position.y).toBeCloseTo(defaultPos.y, 4);
+    expect(r.camera.position.z).toBeCloseTo(defaultPos.z, 4);
+  });
+
+  it('resetFloorIsometricCamera sets camera to 45° corridor view (Yaw 45°, Pitch 35.264°, Zoom 1.215)', () => {
+    r.resetFloorIsometricCamera();
+
+    const yawRad = THREE.MathUtils.degToRad(45);
+    const pitchRad = THREE.MathUtils.degToRad(35.264);
+    const distance = (r as any).frustumSize * 1.5;
+
+    const expectedX = distance * Math.sin(yawRad) * Math.cos(pitchRad);
+    const expectedY = distance * Math.sin(pitchRad);
+    const expectedZ = distance * Math.cos(yawRad) * Math.cos(pitchRad);
+
+    expect(r.camera.zoom).toBe(1.215);
+    expect(r.camera.position.x).toBeCloseTo(expectedX, 4);
+    expect(r.camera.position.y).toBeCloseTo(expectedY, 4);
+    expect(r.camera.position.z).toBeCloseTo(expectedZ, 4);
+  });
+
+  it('setHoveredFloor highlights all rooms of target floor with emissive #fbbf24 and resets others', async () => {
+    await r.renderBuilding(buildingData);
+
+    r.setHoveredFloor(1);
+
+    const buildingMeshes = r.scene.children.filter(
+      (c): c is THREE.Mesh =>
+        c instanceof THREE.Mesh && c.userData['type'] === 'building',
+    );
+    expect(buildingMeshes.length).toBe(12);
+
+    for (const mesh of buildingMeshes) {
+      const mat = mesh.material as THREE.MeshLambertMaterial;
+      if (mesh.userData['floor'] === 1) {
+        expect(mat.emissive.getHex()).toBe(0xfbbf24);
+        expect(mat.emissiveIntensity).toBe(0.5);
+      } else {
+        expect(mat.emissive.getHex()).toBe(0x000000);
+        expect(mat.emissiveIntensity).toBe(0);
+      }
+    }
+
+    // Switch hover to floor 0
+    r.setHoveredFloor(0);
+    for (const mesh of buildingMeshes) {
+      const mat = mesh.material as THREE.MeshLambertMaterial;
+      if (mesh.userData['floor'] === 0) {
+        expect(mat.emissive.getHex()).toBe(0xfbbf24);
+        expect(mat.emissiveIntensity).toBe(0.5);
+      } else {
+        expect(mat.emissive.getHex()).toBe(0x000000);
+        expect(mat.emissiveIntensity).toBe(0);
+      }
+    }
+
+    // Clear hover with null
+    r.setHoveredFloor(null);
+    for (const mesh of buildingMeshes) {
+      const mat = mesh.material as THREE.MeshLambertMaterial;
+      expect(mat.emissive.getHex()).toBe(0x000000);
+      expect(mat.emissiveIntensity).toBe(0);
+    }
+  });
+
+  it('transitionToFloor sets ALL building meshes to visible = false', async () => {
+    await r.renderBuilding(buildingData);
+
+    const buildingMeshes = r.scene.children.filter(
+      (c): c is THREE.Mesh =>
+        c instanceof THREE.Mesh && c.userData['type'] === 'building',
+    );
+    expect(buildingMeshes.length).toBe(12);
+    expect(buildingMeshes.every((m) => m.visible)).toBe(true);
+
+    await r.transitionToFloor(1);
+
+    expect(buildingMeshes.every((m) => m.visible === false)).toBe(true);
+    expect(r.camera.zoom).toBe(1.215);
+
+    const yawRad = THREE.MathUtils.degToRad(45);
+    const pitchRad = THREE.MathUtils.degToRad(35.264);
+    const distance = (r as any).frustumSize * 1.5;
+    expect(r.camera.position.x).toBeCloseTo(distance * Math.sin(yawRad) * Math.cos(pitchRad), 4);
+    expect(r.camera.position.y).toBeCloseTo(distance * Math.sin(pitchRad), 4);
+    expect(r.camera.position.z).toBeCloseTo(distance * Math.cos(yawRad) * Math.cos(pitchRad), 4);
+  });
+
+  it('transitionToBuilding restores visible = true for all building meshes', async () => {
+    await r.renderBuilding(buildingData);
+
+    const buildingMeshes = r.scene.children.filter(
+      (c): c is THREE.Mesh =>
+        c instanceof THREE.Mesh && c.userData['type'] === 'building',
+    );
+
+    await r.transitionToFloor(1);
+    expect(buildingMeshes.every((m) => m.visible === false)).toBe(true);
+
+    await r.transitionToBuilding();
+    expect(buildingMeshes.every((m) => m.visible === true)).toBe(true);
+    expect(r.camera.zoom).toBe(1);
+
+    const bYawRad = THREE.MathUtils.degToRad(45);
+    const bPitchRad = THREE.MathUtils.degToRad(35.264);
+    const bDistance = (r as any).frustumSize * 2;
+    expect(r.camera.position.x).toBeCloseTo(bDistance * Math.sin(bYawRad) * Math.cos(bPitchRad), 4);
+    expect(r.camera.position.y).toBeCloseTo(bDistance * Math.sin(bPitchRad), 4);
+    expect(r.camera.position.z).toBeCloseTo(bDistance * Math.cos(bYawRad) * Math.cos(bPitchRad), 4);
+  });
+});
+
+describe('ThreeGameRenderer — per-room NoticeBadge positioning, bindRoomIds & projection', () => {
+  let r: ThreeGameRenderer;
+
+  beforeEach(() => {
+    r = new ThreeGameRenderer({ width: 800, height: 600 });
+  });
+
+  afterEach(() => r.dispose());
+
+  function buildMappings() {
+    const mappings: Array<{
+      roomId: string;
+      floorIndex: number;
+      roomIndex: number;
+      roomNumber: string;
+    }> = [];
+    for (let f = 0; f < 3; f++) {
+      for (let roomIdx = 0; roomIdx < 4; roomIdx++) {
+        const roomNumber = `P${f + 1}0${roomIdx + 1}`;
+        mappings.push({
+          roomId: `uuid-${roomNumber.toLowerCase()}`,
+          floorIndex: f,
+          roomIndex: roomIdx,
+          roomNumber,
+        });
+      }
+    }
+    return mappings;
+  }
+
+  it('places NoticeBadge for P101 and P204 at distinct (x, y, z) coordinates matching each room mesh front face', async () => {
+    await r.renderBuilding(buildingData);
+    const mappings = buildMappings();
+    r.bindRoomIds(mappings);
+
+    r.setRoomNotice('uuid-p101', 'PAYMENT_DUE');
+    r.setDeviceStatus('uuid-p204', 'ac', 'BROKEN');
+
+    const p101Badge = r.getNoticeBadge('room:uuid-p101');
+    const p204Badge = r.getNoticeBadge('device:uuid-p204:ac');
+
+    expect(p101Badge).toBeDefined();
+    expect(p204Badge).toBeDefined();
+
+    const p101Mesh = r.findRoomMesh('uuid-p101')!;
+    const p204Mesh = r.findRoomMesh('uuid-p204')!;
+    expect(p101Mesh).toBeDefined();
+    expect(p204Mesh).toBeDefined();
+    expect(p101Mesh.userData['legacyRoomId']).toBe('room-1');
+    expect(p101Mesh.userData['roomNumber']).toBe('P101');
+    expect(p204Mesh.userData['roomNumber']).toBe('P204');
+
+    // Distinct coordinates between P101 (floor 0, room 0) and P204 (floor 1, room 3)
+    expect(p101Badge!.position.x).not.toBeCloseTo(p204Badge!.position.x, 2);
+    expect(p101Badge!.position.y).not.toBeCloseTo(p204Badge!.position.y, 2);
+
+    // Front face anchor (z > 0) so upper floors do not occlude lower floors
+    expect(p101Badge!.position.z).toBeGreaterThan(0);
+    expect(p204Badge!.position.z).toBeGreaterThan(0);
+
+    expect(p101Badge!.position.x).toBeCloseTo(p101Mesh.position.x - 0.18, 4);
+    expect(p101Badge!.position.y).toBeCloseTo(p101Mesh.position.y + 0.15, 4);
+    expect(p101Badge!.position.z).toBeCloseTo(p101Mesh.position.z + 0.72, 4);
+
+    expect(p204Badge!.position.x).toBeCloseTo(p204Mesh.position.x + 0.18, 4);
+    expect(p204Badge!.position.y).toBeCloseTo(p204Mesh.position.y + 0.15, 4);
+    expect(p204Badge!.position.z).toBeCloseTo(p204Mesh.position.z + 0.72, 4);
+
+    // Room material colors: P101 yellow tint (#d97706), P204 red (#ff4444), P104 unchanged
+    const p104Mesh = r.findRoomMesh('uuid-p104')!;
+    expect((p101Mesh.material as THREE.MeshLambertMaterial).color.getHex()).toBe(0xd97706);
+    expect((p204Mesh.material as THREE.MeshLambertMaterial).color.getHex()).toBe(0xff4444);
+    expect((p104Mesh.material as THREE.MeshLambertMaterial).color.getHex()).toBe(
+      p104Mesh.userData['baseColor'],
+    );
+
+    // Clearing notice restores P101 baseColor and removes badge
+    r.setRoomNotice('uuid-p101', 'NONE');
+    expect(r.getNoticeBadge('room:uuid-p101')).toBeUndefined();
+    expect((p101Mesh.material as THREE.MeshLambertMaterial).color.getHex()).toBe(
+      p101Mesh.userData['baseColor'],
+    );
+  });
+
+  it('getProjectedRoomPositions returns distinct (x, y) pixel coordinates for every room', async () => {
+    await r.renderBuilding(buildingData);
+    r.bindRoomIds(buildMappings());
+
+    const projected = r.getProjectedRoomPositions(800, 600);
+    expect(projected).toHaveLength(12);
+
+    const coordKeys = new Set(
+      projected.map((p) => `${Math.round(p.x)}:${Math.round(p.y)}`),
+    );
+    expect(coordKeys.size).toBe(12);
+
+    const p101 = projected.find((p) => p.roomNumber === 'P101');
+    const p204 = projected.find((p) => p.roomNumber === 'P204');
+    expect(p101).toBeDefined();
+    expect(p204).toBeDefined();
+    expect(p101!.roomId).toBe('uuid-p101');
+    expect(p204!.roomId).toBe('uuid-p204');
+    expect(p101!.x).not.toBeCloseTo(p204!.x, 1);
+    expect(p101!.y).not.toBeCloseTo(p204!.y, 1);
+  });
+});

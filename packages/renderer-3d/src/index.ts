@@ -12,5 +12,21 @@ export { AvatarController } from './avatar/avatarController';
 export type { AvatarControllerOptions } from './avatar/avatarController';
 export { SnapshotExporter } from './snapshot/snapshotExporter';
 export type { SnapshotOptions } from './snapshot/snapshotExporter';
+export {
+  FloorCutawayRenderer,
+  SleepingBadge,
+} from './cutaway/floorCutawayRenderer';
+export type {
+  FloorCutawayRoomConfig,
+  PickedFloorRoom,
+  PickedRoomInfoPlaque,
+  PickedFloorNoticeBadge,
+  FloorCutawayRendererOptions,
+} from './cutaway/floorCutawayRenderer';
 export { ThreeGameRenderer } from './threeGameRenderer';
-export type { ThreeGameRendererOptions } from './threeGameRenderer';
+export type {
+  ThreeGameRendererOptions,
+  PickedBuildingRoom,
+  BuildingBlockGridConfig,
+  ExtendedBuildingRenderDTO,
+} from './threeGameRenderer';
