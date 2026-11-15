@@ -216,4 +216,628 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
 
     await context.setOffline(false);
   });
+
+  test('TC-P1-AUTH-BLD: Login Screen -> Dang ky Chu tro moi -> Building Setup Modal (4 tang x 3 phong, 315 m²) -> 3D Stage & So 2D F04', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('qlnt-web-app')).toBeVisible();
+
+    // 1. Open Login Screen -> Register new Landlord
+    await page.getByTestId('open-login-screen-btn').click();
+    await expect(page.getByTestId('login-screen')).toBeVisible();
+    await page.getByTestId('tab-register-mode').click();
+
+    await page.getByTestId('input-register-name').fill('Nguyễn Văn An');
+    await page.getByTestId('input-register-phone').fill('0912345678');
+    await page.getByTestId('input-register-email').fill('chutro.an@qlnt.local');
+    await page.getByTestId('input-register-pin').fill('654321');
+    await page.getByTestId('btn-submit-register').click();
+
+    // 2. Building Setup Modal opens automatically after registration
+    await expect(page.getByTestId('building-setup-modal')).toBeVisible();
+
+    // 3. Configure 4 floors x 3 rooms/floor, preset 25m2, edit P101=30m2 & P403=35m2
+    await page.getByTestId('input-total-floors').fill('4');
+    await page.getByTestId('input-rooms-per-floor').fill('3');
+    await page.getByTestId('preset-btn-MEZZANINE_25').click();
+
+    await page.getByTestId('input-room-area-P101').fill('30');
+    await page.getByTestId('input-room-area-P403').fill('35');
+    await expect(page.getByTestId('building-setup-summary')).toContainText('315 m²');
+
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '04-building-area-room-setup.png'),
+      fullPage: true,
+    });
+
+    // 4. Save building setup
+    await page.getByTestId('btn-save-building-setup').click();
+    await expect(page.getByTestId('building-setup-modal')).toHaveCount(0);
+
+    // 5. Verify HUD, 3D Stage, and Sổ 2D F04
+    await expect(page.getByTestId('hud-total-area')).toContainText('315 m²');
+    await expect(page.getByTestId('stage-floor-row-4')).toBeVisible();
+    await expect(page.getByTestId('stage-room-area-P101')).toContainText('30 m²');
+    await expect(page.getByTestId('stage-room-area-P403')).toContainText('35 m²');
+
+    await page.getByTestId('open-ledger-book-btn').click();
+    await expect(page.getByTestId('virtual-ledger-book')).toHaveAttribute(
+      'data-mode',
+      'floor-map'
+    );
+    await page.getByTestId('floor-tab-4').click();
+    await expect(page.getByTestId('virtual-ledger-book')).toContainText('TẦNG 4');
+  });
+
+  test('TC-P1-3D-INTERACT: Thu nho Drawer vao goc, Mat tien ngoai toa nha sach se khong dinh badge phong & Chon phong tu Drawer mo Trang 2 F04', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await expect(page.getByTestId('qlnt-web-app')).toBeVisible();
+    await expect(page.getByTestId('three-game-canvas')).toBeVisible();
+
+    const drawer = page.getByTestId('stage-room-drawer');
+    const toggleBtn = page.getByTestId('toggle-room-drawer-btn');
+    await expect(drawer).toHaveAttribute('data-drawer-collapsed', 'false');
+
+    // 1. Collapse room drawer into the corner
+    await toggleBtn.click();
+    await expect(drawer).toHaveAttribute('data-drawer-collapsed', 'true');
+
+    // 2. Verify that in BUILDING mode, individual room badges/pins are NO LONGER rendered on the building exterior
+    await expect(page.getByTestId('floor-3d-pins-layer')).toHaveCount(0);
+    await expect(page.getByTestId('building-3d-yellow-badge-P101')).toHaveCount(0);
+    await expect(page.getByTestId('building-3d-yellow-badge-P201')).toHaveCount(0);
+    await expect(page.getByTestId('building-3d-red-badge-P204')).toHaveCount(0);
+    await expect(page.getByTestId('building-3d-red-badge-P302')).toHaveCount(0);
+    await expect(page.getByTestId('building-3d-yellow-badge-P104')).toHaveCount(0);
+    await expect(page.getByTestId('building-3d-red-badge-P104')).toHaveCount(0);
+
+    // Test 3D camera controls (zoom in -> reset view)
+    await page.getByTestId('btn-3d-zoom-in').click();
+    await page.getByTestId('btn-3d-reset-view').click();
+
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '05-3d-stage-drawer-collapsed.png'),
+      fullPage: true,
+    });
+
+    // 3. Expand room drawer back & click room card P204 -> opens F04 of P204 at Page 2 (Devices)
+    await toggleBtn.click();
+    await expect(drawer).toHaveAttribute('data-drawer-collapsed', 'false');
+
+    const cardP204 = page.getByTestId('stage-room-card-P204');
+    await expect(cardP204).toBeVisible();
+    await cardP204.click();
+    await expect(page.getByTestId('room-detail-single-page')).toBeVisible();
+    await expect(page.getByTestId('room-detail-single-page')).toContainText('P204');
+    await expect(page.getByTestId('f04-page-2-controls')).toBeVisible();
+
+    // Close 2 levels back to 3D Stage
+    await page.getByTestId('room-detail-close-btn').click();
+    await page.getByTestId('close-ledger-book-btn').click();
+    await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0);
+  });
+
+  test('TC-P1-FLOOR-CUTAWAY: Chon tang tu Toan canh 3D (Click truc tiep Floor 2) -> Chuyen canh Mat bang Tang 3D Isometric Cutaway -> Click phong mo So F04 -> Quay lai Toan canh', async ({
+    page,
+  }) => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+    const externalRequests: string[] = [];
+
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+    page.on('pageerror', (err) => {
+      pageErrors.push(err.message);
+    });
+    page.on('request', (req) => {
+      const url = req.url();
+      if (
+        !url.startsWith('http://127.0.0.1:4173') &&
+        !url.startsWith('data:') &&
+        !url.startsWith('blob:')
+      ) {
+        externalRequests.push(url);
+      }
+    });
+
+    await page.goto('/');
+    await expect(page.getByTestId('qlnt-web-app')).toBeVisible();
+    await expect(page.getByTestId('canvas-3d-stage')).toBeVisible();
+    await expect(page.getByTestId('three-game-canvas')).toBeVisible();
+
+    // 1. Verify initially in BUILDING viewMode and facade is clean
+    await expect(page.getByTestId('btn-back-to-building')).toHaveCount(0);
+    await expect(page.getByTestId('floor-3d-pins-layer')).toHaveCount(0);
+    await expect(page.getByTestId('floor-cutaway-dock')).toBeVisible();
+    const dockBtnFloor2 = page.getByTestId('dock-floor-btn-2');
+    await expect(dockBtnFloor2).toBeVisible();
+    await expect(dockBtnFloor2).toHaveAttribute('data-active', 'false');
+
+    // 2. Hover directly on the 3D building canvas (Floor 2 is above Floor 1) -> verifies Floor Tooltip
+    const canvas = page.getByTestId('three-game-canvas');
+    const floor2Pos = await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r) return null;
+      const canvasEl = document.querySelector('canvas[data-testid="three-game-canvas"]');
+      if (!canvasEl) return null;
+      const rect = canvasEl.getBoundingClientRect();
+
+      const meshesOnFloor2 = (r.buildingMeshes as any[]).filter((m: any) => m.userData?.floor === 1);
+      for (const mesh of meshesOnFloor2) {
+        for (const [dz, dy] of [
+          [0.45, 0],
+          [0.4, -0.2],
+          [0, -0.2],
+          [0.4, 0.2],
+        ]) {
+          const worldPos = mesh.position.clone();
+          worldPos.z += dz;
+          worldPos.y += dy;
+          worldPos.project(r.camera);
+          const x = ((worldPos.x + 1) * rect.width) / 2;
+          const y = ((-worldPos.y + 1) * rect.height) / 2;
+          const ndcX = (x / rect.width) * 2 - 1;
+          const ndcY = -(y / rect.height) * 2 + 1;
+          const hit = r.pickBuildingRoom(ndcX, ndcY);
+          if (hit && hit.floorIndex === 1) {
+            return { x, y };
+          }
+        }
+      }
+      return null;
+    });
+    expect(floor2Pos).not.toBeNull();
+
+    await canvas.hover({ position: { x: floor2Pos!.x, y: floor2Pos!.y } });
+    await expect(page.getByTestId('stage-3d-hover-tooltip')).toBeVisible();
+    await expect(page.getByTestId('stage-3d-hover-tooltip')).toContainText('Tầng 2');
+    await expect(page.getByTestId('stage-3d-hover-tooltip')).toContainText('Nhấn để mở Mặt bằng 3D Tầng');
+
+    // Click directly on the 3D building canvas (Floor 2) to enter FLOOR_3D mode
+    await canvas.click({ position: { x: floor2Pos!.x, y: floor2Pos!.y } });
+
+    // Verify FLOOR_3D mode active for Floor 2
+    const backBtn = page.getByTestId('btn-back-to-building');
+    await expect(backBtn).toBeVisible();
+    await expect(backBtn).toContainText('QUAY LẠI TOÀN CẢNH TÒA NHÀ');
+    await expect(dockBtnFloor2).toHaveAttribute('data-active', 'true');
+    await expect(page.getByTestId('canvas-3d-stage')).toHaveAttribute('data-view-mode', 'FLOOR_3D');
+    await expect(page.getByTestId('canvas-3d-stage')).toHaveAttribute('data-active-floor', '2');
+
+    // Verify that in FLOOR_3D mode, no floating HTML badges/icons or pins are rendered above the rooms
+    await expect(page.getByTestId('floor-3d-pins-layer')).toHaveCount(0);
+    await expect(page.getByTestId('floor-3d-room-P201')).toHaveCount(0);
+    await expect(page.getByTestId('floor-3d-room-P202')).toHaveCount(0);
+    await expect(page.getByTestId('floor-3d-yellow-badge-P201')).toHaveCount(0);
+    await expect(page.getByTestId('floor-3d-red-badge-P204')).toHaveCount(0);
+
+    // Verify 3D notice badges on Floor 2 cutaway view:
+    // P201 has yellow notice badge (PAYMENT), P204 has red notice badge (DEVICE), P203 has NO notice badge
+    // No notice badges from Floor 1 or Floor 3 are visible (all building badges hidden)
+    const badgesState = await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r) return null;
+      const cutaway = r.getFloorCutawayRenderer();
+      if (!cutaway) return null;
+
+      const interactiveMeshes = cutaway.getInteractiveMeshes();
+      const p201Mesh = interactiveMeshes.find((m: any) => m.userData?.roomCode === 'P201');
+      const p203Mesh = interactiveMeshes.find((m: any) => m.userData?.roomCode === 'P203');
+      const p204Mesh = interactiveMeshes.find((m: any) => m.userData?.roomCode === 'P204');
+
+      const p201Id = p201Mesh?.userData?.roomId;
+      const p203Id = p203Mesh?.userData?.roomId;
+      const p204Id = p204Mesh?.userData?.roomId;
+
+      const allCutawayBadges = cutaway
+        .getBadges()
+        .filter((b: any) => b.userData?.type === 'cutaway_notice_badge');
+      const p201Badges = allCutawayBadges.filter((b: any) => b.userData?.roomId === p201Id);
+      const p203Badges = allCutawayBadges.filter((b: any) => b.userData?.roomId === p203Id);
+      const p204Badges = allCutawayBadges.filter((b: any) => b.userData?.roomId === p204Id);
+
+      // Building badges (from Floor 1, Floor 3, etc.)
+      const buildingBadges = Array.from((r.badges as Map<string, any>).values());
+      const visibleBuildingBadges = buildingBadges.filter((b: any) => b.visible);
+
+      return {
+        p201PaymentBadge: p201Badges.some(
+          (b: any) => b.userData?.noticeKind === 'PAYMENT' && b.visible
+        ),
+        p204DeviceBadge: p204Badges.some(
+          (b: any) => b.userData?.noticeKind === 'DEVICE' && b.visible
+        ),
+        p203BadgeCount: p203Badges.length,
+        visibleBuildingBadgesCount: visibleBuildingBadges.length,
+      };
+    });
+
+    expect(badgesState).not.toBeNull();
+    expect(badgesState!.p201PaymentBadge).toBe(true);
+    expect(badgesState!.p204DeviceBadge).toBe(true);
+    expect(badgesState!.p203BadgeCount).toBe(0);
+    expect(badgesState!.visibleBuildingBadgesCount).toBe(0);
+
+    // Verify default camera angle for floor cutaway: 45 degree isometric angle centered on corridor with zoom 1.215
+    const cameraState = await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r || !r.camera) return null;
+      const cam = r.camera;
+      const x = cam.position.x;
+      const y = cam.position.y;
+      const z = cam.position.z;
+      const yawDeg = (Math.atan2(x, z) * 180) / Math.PI;
+      const horizontalDist = Math.hypot(x, z);
+      const pitchDeg = (Math.atan2(y, horizontalDist) * 180) / Math.PI;
+      return {
+        zoom: cam.zoom,
+        yawDeg,
+        pitchDeg,
+      };
+    });
+
+    expect(cameraState).not.toBeNull();
+    expect(cameraState!.zoom).toBeCloseTo(1.215, 2);
+    expect(cameraState!.yawDeg).toBeCloseTo(45, 0.5);
+    expect(cameraState!.pitchDeg).toBeCloseTo(35.264, 0.5);
+
+    // Verify both room rows (Row 0 and Row 1) have full 1.2m enclosing walls with cap trim
+    const wallsState = await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r) return null;
+      const cutaway = r.getFloorCutawayRenderer();
+      if (!cutaway) return null;
+
+      const interactiveRooms = cutaway.getInteractiveMeshes();
+      const wallMeshes: Array<{ roomId: string; height: number; width: number; depth: number; z: number }> = [];
+
+      for (const roomMesh of interactiveRooms) {
+        const roomId = roomMesh.userData?.roomId;
+        const roomGroup = cutaway.getRoomGroup(roomId);
+        if (!roomGroup) continue;
+
+        for (const child of roomGroup.children) {
+          if (
+            child.isMesh &&
+            child.geometry &&
+            child.geometry.parameters &&
+            (Math.abs(child.geometry.parameters.depth - 0.15) < 0.001 ||
+              Math.abs(child.geometry.parameters.width - 0.15) < 0.001)
+          ) {
+            wallMeshes.push({
+              roomId,
+              height: child.geometry.parameters.height,
+              width: child.geometry.parameters.width,
+              depth: child.geometry.parameters.depth,
+              z: child.position.z,
+            });
+          }
+        }
+      }
+
+      const curbWalls035 = wallMeshes.filter((w) => Math.abs(w.height - 0.35) < 0.01);
+      const fullHeightWalls = wallMeshes.filter((w) => Math.abs(w.height - 1.2) < 0.01);
+      const trimMeshes = wallMeshes.filter((w) => Math.abs(w.height - 0.03) < 0.01);
+
+      return {
+        totalWallSegments: wallMeshes.length,
+        curbWallsCount: curbWalls035.length,
+        fullHeightWallsCount: fullHeightWalls.length,
+        trimMeshesCount: trimMeshes.length,
+      };
+    });
+
+    expect(wallsState).not.toBeNull();
+    expect(wallsState!.curbWallsCount).toBe(0);
+    expect(wallsState!.fullHeightWallsCount).toBe(20); // 5 wall segments per room * 4 rooms
+    expect(wallsState!.trimMeshesCount).toBe(20);
+
+    // Verify reset view button retains "Góc chuẩn 45°" in FLOOR_3D mode with standard 45° tooltip
+    const resetViewBtn = page.getByTestId('btn-3d-reset-view');
+    await expect(resetViewBtn).toBeVisible();
+    await expect(resetViewBtn).toHaveText('Góc chuẩn 45°');
+    await expect(resetViewBtn).toHaveAttribute('title', 'Đặt lại góc nhìn Isometric 45°');
+
+    // Save screenshot of 3D Floor Cutaway with precise notice badges (07-floor-cutaway-notice-badges.png)
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '07-floor-cutaway-notice-badges.png'),
+      fullPage: true,
+    });
+
+    // Re-capture Chrome screenshot: apps/web/e2e-results/screenshots/06-3d-floor-cutaway-view.png
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '06-3d-floor-cutaway-view.png'),
+      fullPage: true,
+    });
+
+    // Save screenshot of 45 degree isometric angle centered on corridor with zoom 1.215
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '09-floor-cutaway-45deg-corridor-zoom10pct.png'),
+      fullPage: true,
+    });
+
+    // Project P201 notice badge to screen coordinates and hover/click it
+    const p201BadgePos = await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r) return null;
+      const cutaway = r.getFloorCutawayRenderer();
+      if (!cutaway) return null;
+
+      const interactiveMeshes = cutaway.getInteractiveMeshes();
+      const p201Mesh = interactiveMeshes.find((m: any) => m.userData?.roomCode === 'P201');
+      const p201Id = p201Mesh?.userData?.roomId;
+      const badge = cutaway
+        .getBadges()
+        .find(
+          (b: any) =>
+            b.userData?.type === 'cutaway_notice_badge' &&
+            b.userData?.roomId === p201Id &&
+            b.userData?.noticeKind === 'PAYMENT'
+        );
+      if (!badge) return null;
+
+      const worldPos = r.camera.position.clone();
+      badge.getWorldPosition(worldPos);
+      worldPos.y += 0.2; // center of notice diamond/icon
+      worldPos.project(r.camera);
+
+      const canvasEl = document.querySelector('canvas[data-testid="three-game-canvas"]');
+      if (!canvasEl) return null;
+      const rect = canvasEl.getBoundingClientRect();
+
+      return {
+        x: ((worldPos.x + 1) * rect.width) / 2,
+        y: ((-worldPos.y + 1) * rect.height) / 2,
+      };
+    });
+
+    expect(p201BadgePos).not.toBeNull();
+
+    // Hover on P201 notice badge -> verify tooltip
+    await canvas.hover({ position: { x: p201BadgePos!.x, y: p201BadgePos!.y } });
+    await expect(page.getByTestId('stage-3d-hover-tooltip')).toBeVisible();
+    await expect(page.getByTestId('stage-3d-hover-tooltip')).toContainText('Cảnh báo Hóa đơn · Phòng P201');
+    await expect(page.getByTestId('stage-3d-hover-tooltip')).toContainText(
+      'Nhấp để mở Sổ Quản Lý F04 (Hóa đơn)'
+    );
+
+    // Click on notice badge for P201 -> opens Room Ledger F04 Page 1 (Billing)
+    await canvas.click({ position: { x: p201BadgePos!.x, y: p201BadgePos!.y } });
+    await expect(page.getByTestId('ledger-overlay-host')).toBeVisible();
+    await expect(page.getByTestId('room-detail-single-page')).toBeVisible();
+    await expect(page.getByTestId('room-detail-single-page')).toContainText('P201');
+    await expect(page.getByTestId('f04-page-1-controls')).toBeVisible();
+
+    // Close F04 back to FLOOR_3D
+    await page.getByTestId('room-detail-close-btn').click();
+    await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0);
+
+    // 3. Hover & Click interactive Room Info Plaque on the corridor wall of Room P202
+    // Project P202 plaque to screen coordinates dynamically
+    const p202PlaquePos = await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r) return null;
+      const cutaway = r.getFloorCutawayRenderer();
+      if (!cutaway) return null;
+
+      const plaques = cutaway.getRoomInfoPlaqueMeshes();
+      const p202Plaque = plaques.find((m: any) => m.userData?.roomCode === 'P202');
+      if (!p202Plaque) return null;
+
+      const worldPos = r.camera.position.clone();
+      p202Plaque.getWorldPosition(worldPos);
+      worldPos.project(r.camera);
+
+      const canvasEl = document.querySelector('canvas[data-testid="three-game-canvas"]');
+      if (!canvasEl) return null;
+      const rect = canvasEl.getBoundingClientRect();
+
+      return {
+        x: ((worldPos.x + 1) * rect.width) / 2,
+        y: ((-worldPos.y + 1) * rect.height) / 2,
+      };
+    });
+
+    expect(p202PlaquePos).not.toBeNull();
+
+    await canvas.hover({ position: { x: p202PlaquePos!.x, y: p202PlaquePos!.y } });
+    await expect(page.getByTestId('stage-3d-hover-tooltip')).toBeVisible();
+    await expect(page.getByTestId('stage-3d-hover-tooltip')).toContainText('Bảng Thông Tin Phòng P202');
+    await expect(page.getByTestId('stage-3d-hover-tooltip')).toContainText('Nhấp để mở Sổ Quản Lý F04');
+
+    // Click interactive room info plaque to open F04 Single Page Modal for P202
+    await canvas.click({ position: { x: p202PlaquePos!.x, y: p202PlaquePos!.y } });
+    await expect(page.getByTestId('ledger-overlay-host')).toBeVisible();
+    await expect(page.getByTestId('room-detail-single-page')).toBeVisible();
+    await expect(page.getByTestId('room-detail-single-page')).toContainText('P202');
+
+    // Close F04 back to FLOOR_3D
+    await page.getByTestId('room-detail-close-btn').click();
+    await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0);
+
+    // Still in FLOOR_3D mode
+    await expect(page.getByTestId('btn-back-to-building')).toBeVisible();
+    await expect(dockBtnFloor2).toHaveAttribute('data-active', 'true');
+
+    // 4. Click '◀ QUAY LẠI TOÀN CẢNH TÒA NHÀ' to return to BUILDING mode
+    await backBtn.click();
+    await expect(page.getByTestId('btn-back-to-building')).toHaveCount(0);
+    await expect(dockBtnFloor2).toHaveAttribute('data-active', 'false');
+    await expect(page.getByTestId('canvas-3d-stage')).toHaveAttribute('data-view-mode', 'BUILDING');
+    await expect(page.getByTestId('stage-floor-btn-2')).toBeVisible();
+    await expect(page.getByTestId('floor-3d-pins-layer')).toHaveCount(0);
+
+    // Verify reset view button switches back to "Góc chuẩn 45°" in BUILDING mode
+    await expect(page.getByTestId('btn-3d-reset-view')).toHaveText('Góc chuẩn 45°');
+    await expect(page.getByTestId('btn-3d-reset-view')).toHaveAttribute(
+      'title',
+      'Đặt lại góc nhìn Isometric 45°'
+    );
+
+    // Assert zero console errors, zero page errors, zero external network requests
+    expect(consoleErrors).toEqual([]);
+    expect(pageErrors).toEqual([]);
+    expect(externalRequests).toEqual([]);
+  });
+
+  test('TC-P1-13-BLOCK-PRESETS: Tuy chon Khoi Toa Nha 3D Ben Ngoai (Thap 2x2x6 & Khoi Vuong 3x3x3) -> Dong Bo So Tang/Phong -> Chup Anh Nghiem Thu', async ({
+    page,
+  }) => {
+    const consoleErrors: string[] = [];
+    const pageErrors: string[] = [];
+    const externalRequests: string[] = [];
+
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+    page.on('pageerror', (err) => {
+      pageErrors.push(err.message);
+    });
+    page.on('request', (req) => {
+      const url = req.url();
+      if (
+        !url.startsWith('http://127.0.0.1:4173') &&
+        !url.startsWith('data:') &&
+        !url.startsWith('blob:')
+      ) {
+        externalRequests.push(url);
+      }
+    });
+
+    await page.goto('/');
+    await expect(page.getByTestId('qlnt-web-app')).toBeVisible();
+    await expect(page.getByTestId('canvas-3d-stage')).toBeVisible();
+    await expect(page.getByTestId('three-game-canvas')).toBeVisible();
+
+    // 1. Initial State: COMPACT_2x2x3 (3 floors, 12 rooms)
+    const presetDropdown = page.getByTestId('building-block-preset-dropdown');
+    await expect(presetDropdown).toBeVisible();
+    await expect(presetDropdown).toContainText('Nhà phố 2x2x3');
+
+    // Verify initial 3 floor buttons
+    await expect(page.getByTestId('stage-floor-btn-1')).toBeVisible();
+    await expect(page.getByTestId('stage-floor-btn-2')).toBeVisible();
+    await expect(page.getByTestId('stage-floor-btn-3')).toBeVisible();
+    await expect(page.getByTestId('stage-floor-btn-4')).toHaveCount(0);
+
+    // 2. Select TOWER_2x2x6 via HUD dropdown
+    await presetDropdown.click();
+    const presetMenu = page.getByTestId('building-block-preset-menu');
+    await expect(presetMenu).toBeVisible();
+
+    // Select TOWER_2x2x6 option
+    await page.getByTestId('building-block-preset-item-TOWER_2x2x6').click();
+    await expect(presetMenu).toHaveCount(0);
+
+    // Verify dropdown label updated to Tháp 2x2x6
+    await expect(presetDropdown).toContainText('Tháp 2x2x6');
+
+    // Verify 6 floors: buttons 1..6 visible
+    for (let f = 1; f <= 6; f++) {
+      await expect(page.getByTestId(`stage-floor-btn-${f}`)).toBeVisible();
+      await expect(page.getByTestId(`dock-floor-btn-${f}`)).toBeVisible();
+    }
+    await expect(page.getByTestId('stage-floor-btn-7')).toHaveCount(0);
+
+    // Verify 3D mesh count = 24 and grid shape = 2x2
+    const tower3dState = await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r) return null;
+      return {
+        meshCount: r.buildingMeshes?.length,
+        shape: r.getBuildingBlockShape?.(),
+      };
+    });
+    expect(tower3dState).not.toBeNull();
+    expect(tower3dState!.meshCount).toBe(24);
+    expect(tower3dState!.shape).toEqual({ cols: 2, rows: 2 });
+
+    // Capture screenshot: 10-building-block-preset-tower-2x2x6.png
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '10-building-block-preset-tower-2x2x6.png'),
+      fullPage: true,
+    });
+
+    // 3. Select CUBE_3x3x3 via HUD dropdown
+    await presetDropdown.click();
+    await expect(page.getByTestId('building-block-preset-menu')).toBeVisible();
+    await page.getByTestId('building-block-preset-item-CUBE_3x3x3').click();
+    await expect(page.getByTestId('building-block-preset-menu')).toHaveCount(0);
+
+    // Verify dropdown label updated to Khối vuông 3x3x3
+    await expect(presetDropdown).toContainText('Khối vuông 3x3x3');
+
+    // Verify 3 floors & 27 rooms
+    for (let f = 1; f <= 3; f++) {
+      await expect(page.getByTestId(`stage-floor-btn-${f}`)).toBeVisible();
+      await expect(page.getByTestId(`dock-floor-btn-${f}`)).toBeVisible();
+    }
+    await expect(page.getByTestId('stage-floor-btn-4')).toHaveCount(0);
+    await expect(page.getByTestId('dock-floor-btn-4')).toHaveCount(0);
+
+    // Verify 3D mesh count = 27 and grid shape = 3x3
+    const cube3dState = await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r) return null;
+      return {
+        meshCount: r.buildingMeshes?.length,
+        shape: r.getBuildingBlockShape?.(),
+      };
+    });
+    expect(cube3dState).not.toBeNull();
+    expect(cube3dState!.meshCount).toBe(27);
+    expect(cube3dState!.shape).toEqual({ cols: 3, rows: 3 });
+
+    // Capture screenshot: 11-building-block-preset-cube-3x3x3.png
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '11-building-block-preset-cube-3x3x3.png'),
+      fullPage: true,
+    });
+
+    // 4. Test opening Floor 2 cutaway with new block structure
+    await page.getByTestId('dock-floor-btn-2').click();
+    await expect(page.getByTestId('canvas-3d-stage')).toHaveAttribute('data-view-mode', 'FLOOR_3D');
+    await expect(page.getByTestId('btn-back-to-building')).toBeVisible();
+    await expect(page.getByTestId('building-block-preset-dropdown')).toHaveCount(0); // Preset selector hidden in FLOOR_3D
+
+    // Verify 45 deg isometric camera
+    const cameraState = await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r || !r.camera) return null;
+      const cam = r.camera;
+      const x = cam.position.x;
+      const y = cam.position.y;
+      const z = cam.position.z;
+      const yawDeg = (Math.atan2(x, z) * 180) / Math.PI;
+      const horizontalDist = Math.hypot(x, z);
+      const pitchDeg = (Math.atan2(y, horizontalDist) * 180) / Math.PI;
+      return {
+        zoom: cam.zoom,
+        yawDeg,
+        pitchDeg,
+      };
+    });
+    expect(cameraState).not.toBeNull();
+    expect(cameraState!.zoom).toBeCloseTo(1.215, 2);
+    expect(cameraState!.yawDeg).toBeCloseTo(45, 0.5);
+    expect(cameraState!.pitchDeg).toBeCloseTo(35.264, 0.5);
+
+    // Return to BUILDING mode
+    await page.getByTestId('btn-back-to-building').click();
+    await expect(page.getByTestId('canvas-3d-stage')).toHaveAttribute('data-view-mode', 'BUILDING');
+    await expect(presetDropdown).toBeVisible();
+
+    // Assert zero console errors, zero page errors, zero external network requests
+    expect(consoleErrors).toEqual([]);
+    expect(pageErrors).toEqual([]);
+    expect(externalRequests).toEqual([]);
+  });
 });

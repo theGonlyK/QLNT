@@ -1,14 +1,14 @@
 # Báo cáo Kiểm thử Trình duyệt Thực tế (Playwright E2E) — Prototype P1 (`@qlnt/web`)
 
 - **Dự án:** Quản lý nhà trọ (QLNT)
-- **Ngày kiểm thử:** `2026-11-14`
+- **Ngày kiểm thử:** `2026-11-15`
 - **Môi trường thực thi:** Google Chrome (`channel: 'chrome'`, headless) qua `@playwright/test` trên `vite preview` cục bộ (`http://127.0.0.1:4173`, `$0`, không kết nối bên thứ 3 theo `QLNT-D016`)
 - **Bộ test thực thi:** [`apps/web/e2e/p1-flows.spec.ts`](../apps/web/e2e/p1-flows.spec.ts)
-- **Kết quả tổng hợp:** **3/3 E2E Test Suites PASS (`3.8s`)**, **0 console errors**, **0 page errors**, **0 external network requests**.
+- **Kết quả tổng hợp:** **7/7 E2E Test Suites PASS (`8.2s`)**, **0 console errors**, **0 page errors**, **0 external network requests**.
 
 ---
 
-## 1. Bảng Kết quả Ánh xạ Kịch bản Kiểm thử `TC-P1-01..12`
+## 1. Bảng Kết quả Ánh xạ Kịch bản Kiểm thử `TC-P1-01..13`
 
 | Mã TC | Nội dung Kiểm thử | Kết quả | Bằng chứng / Ghi chú Thực tế |
 | :---: | :--- | :---: | :--- |
@@ -24,6 +24,10 @@
 | **TC-P1-10** | Giao diện **Mobile `390x844`** `Single-Page` 3 Trang, vùng chạm `>= 44px`, Đóng Sổ 2 cấp | **PASS** | Không tràn ngang (`scrollWidth <= clientWidth + 2`), nút bấm `>= 44px`, chuyển tầng & đóng 2 cấp mượt. |
 | **TC-P1-11** | Chỉnh sửa trực tiếp (`In-place Edit`) & Nhật ký bất biến Trang 3 (`Read-only`) | **PASS** | `audit-log-timeline` Trang 3 có `0` nút sửa/xóa (`Read-only` hoàn toàn). |
 | **TC-P1-12** | Chế độ **Offline (`setOffline(true)`)** đọc/ghi mượt qua `IndexedDB` | **PASS** | Mở Sổ F04, chuyển tầng 2, mở phòng `P201`, chuyển Trang 1→2→3 và đóng Sổ 2 cấp thành công khi ngắt mạng hoàn toàn. |
+| **TC-P1-AUTH-BLD** | **Màn hình Login → Đăng ký Chủ trọ mới → Đăng ký Diện tích & Số phòng Tòa nhà (`4 tầng x 3 phòng`, `315 m²`)** | **PASS** | Đăng ký Chủ trọ tự mở `building-setup-modal`; cấu hình 4 tầng × 3 phòng, preset `25 m²`, sửa `P101=30 m²` & `P403=35 m²`; Lưu → HUD hiển thị `315 m²`, 3D Stage hiện `stage-floor-row-4`, `P101` (`30 m²`), `P403` (`35 m²`), Sổ 2D F04 mở `TẦNG 4`. |
+| **TC-P1-3D-INTERACT** | **Thu nhỏ Drawer phòng & tầng vào góc, Mặt tiền ngoài tòa nhà sạch sẽ không dính badge phòng & Chọn phòng từ Drawer mở Trang 2 F04** | **PASS** | Bấm `toggle-room-drawer-btn` thu gọn `stage-room-drawer`; xác nhận ở chế độ `BUILDING` mặt tiền tòa nhà 3D hoàn toàn sạch sẽ, không còn badge/pin từng phòng rải rác ngoài ngoại thất (`building-3d-*-badge-*` count = 0); click zoom/reset camera mượt; mở lại drawer bấm `stage-room-card-P204` mở đúng Sổ F04 phòng `P204` tại Trang 2 (`f04-page-2-controls`). |
+| **TC-P1-FLOOR-CUTAWAY** | **Chọn tầng trực tiếp trên Toàn cảnh 3D (Floor 2) → Chuyển cảnh Mặt bằng Tầng 3D Góc Nhìn 45° Chuẩn Tâm Hành Lang Thu Nhỏ 10% (Yaw 45°, Pitch 35.264°, Zoom 1.215) & Đầy Đủ Tường Bao Quanh 1.2m Cho Cả 2 Dãy Phòng → Nút Góc Chuẩn 45° → Click Chấm than vàng P201 mở ngay Sổ F04 Trang 1 → Click Bảng Thông Tin Tường mở Sổ F04 → Quay lại Toàn cảnh** | **PASS** | Ở chế độ `BUILDING`, rê chuột lên canvas trúng Tầng 2 hiển thị Tooltip `Tầng 2 · 4 phòng · Nhấn để mở Mặt bằng 3D Tầng`; click trực tiếp chuyển cảnh sang `FLOOR_3D` Tầng 2; camera tự động đặt góc nhìn 45° Isometric chuẩn tâm hành lang (Yaw 45°, Pitch 35.264°, Zoom 1.215 - thu nhỏ 10% mở rộng tầm nhìn); cả 2 dãy phòng (Row 0 và Row 1) đều có 4 bức tường bao quanh đầy đủ với chiều cao 1.2m và nẹp viền đen 0.03m (tổng 20 phân đoạn tường, không còn tường 0.35m); nút điều khiển 3D hiển thị `Góc chuẩn 45°` với tooltip `Đặt lại góc nhìn Isometric 45°` (khi click gọi `resetFloorIsometricCamera()`); toàn bộ building meshes của tòa nhà và toàn bộ building badges ngoài ngoại thất được ẩn sạch sẽ (`mesh.visible = false`, `buildingBadges.visible = false`), không còn bất kỳ chấm than nào của Tầng 1 hoặc Tầng 3 xuất hiện trong scene; trong Mặt bằng Tầng 2: Phòng P201 có chấm than vàng nhấp nhô trên cửa (`noticeKind = 'PAYMENT'`), Phòng P204 có chấm than đỏ (`noticeKind = 'DEVICE'`), Phòng P203 hoàn toàn không có chấm than; rê chuột trúng chấm than vàng P201 hiển thị tooltip `Cảnh báo Hóa đơn · Phòng P201 · Nhấp để mở Sổ Quản Lý F04 (Hóa đơn)`; click trực tiếp vào chấm than vàng P201 mở ngay Sổ Quản Lý F04 tại Trang 1 Hóa đơn (`f04-page-1-controls`); đóng Sổ quay lại tầng; mỗi phòng có cánh cửa gỗ mở hé ~38° kèm tay nắm kim loại và Bảng số phòng sắc nét viền vàng gold 512x160; rê chuột vào Bảng Thông Tin Phòng trên vách tường bên phải cửa hiển thị Tooltip `Bảng Thông Tin Phòng P202 · Nhấp để mở Sổ Quản Lý F04`; click trực tiếp vào Bảng Thông Tin Phòng mở thẳng Sổ F04 phòng P202; đóng Sổ trở về tầng 3D; click `btn-back-to-building` (`◀ QUAY LẠI TOÀN CẢNH TÒA NHÀ`) khôi phục toàn bộ khối tòa nhà (`mesh.visible = true`, khôi phục building badges) zoom out mượt về toàn cảnh; nút điều khiển vẫn là `Góc chuẩn 45°`. |
+| **TC-P1-13-BLOCK-PRESETS** | **Tùy chọn Khối Tòa Nhà 3D Bên Ngoài (Tháp 2x2x6 & Khối Vuông 3x3x3) qua HUD Dropdown → Tự động cập nhật 6 tầng (Tháp 24 phòng) và 3 tầng 27 phòng (Khối vuông) → Đồng bộ Local-First Dexie & Mở Cutaway Tầng 2** | **PASS** | Dropdown `building-block-preset-dropdown` trên thanh HUD 3D cho phép chuyển đổi nhanh chóng giữa các khối kiến trúc với touch-target $\ge 44\text{px}$; chọn `TOWER_2x2x6` cập nhật ngay lập tức 6 tầng, 24 meshes phòng 3D theo lưới 2x2, thanh dock và stage hiển thị đủ 6 tầng; chọn `CUBE_3x3x3` cập nhật ngay lập tức 3 tầng, 27 meshes phòng 3D theo lưới 3x3; CSDL Dexie đồng bộ số tầng và danh sách phòng; mở Cutaway Tầng 2 giữ nguyên góc nhìn 45° chuẩn tâm hành lang (Zoom 1.215); dropdown tự động ẩn khi vào Cutaway và hiện lại khi về toà nhà; 0 console errors, 0 page errors, 0 request mạng ngoài. |
 
 ---
 
@@ -32,3 +36,11 @@
 * Desktop Cảnh 3D Isometric: `apps/web/e2e-results/screenshots/01-desktop-3d-stage.png`
 * Desktop Sổ F04 Trang 1 (VietQR Offline & Chốt điện nước): `apps/web/e2e-results/screenshots/02-desktop-f04-page1-vietqr.png`
 * Mobile `390x844` Sổ F04 Offline Mode: `apps/web/e2e-results/screenshots/03-mobile-390x844-f04-offline.png`
+* Desktop Đăng ký Diện tích & Số phòng Tòa nhà (`4 tầng x 3 phòng`, `315 m²`): `apps/web/e2e-results/screenshots/04-building-area-room-setup.png`
+* Desktop Cảnh 3D với Drawer phòng & tầng thu gọn vào góc: `apps/web/e2e-results/screenshots/05-3d-stage-drawer-collapsed.png`
+* Desktop Mặt bằng Tầng 3D Cutaway (`FLOOR_3D` View): `apps/web/e2e-results/screenshots/06-3d-floor-cutaway-view.png`
+* Desktop Dấu Chấm Than Cảnh Báo Chuẩn Xác Vào Từng Phòng Trên Mặt Bằng Tầng 3D (`FLOOR_3D` Notice Badges): `apps/web/e2e-results/screenshots/07-floor-cutaway-notice-badges.png`
+* Desktop Góc Nhìn Dọc Hành Lang Mặc Định & Đầy Đủ Tường 1.2m Cả 2 Dãy Phòng 3D (`FLOOR_3D` Vertical Corridor View): `apps/web/e2e-results/screenshots/08-floor-cutaway-vertical-corridor-view.png`
+* Desktop Góc Nhìn 45° Chuẩn Tâm Hành Lang & Tầm Nhìn Thu Nhỏ 10% Zoom 1.215 (`FLOOR_3D` 45° Isometric Corridor View Zoom 1.215): `apps/web/e2e-results/screenshots/09-floor-cutaway-45deg-corridor-zoom10pct.png`
+* Desktop Tùy Chọn Khối Tòa Nhà 3D Tháp Nhà Ống Cao Tầng 2x2x6 6 Tầng 24 Phòng (`TOWER_2x2x6` View): `apps/web/e2e-results/screenshots/10-building-block-preset-tower-2x2x6.png`
+* Desktop Tùy Chọn Khối Tòa Nhà 3D Khối Vuông Lập Phương 3x3x3 3 Tầng 27 Phòng (`CUBE_3x3x3` View): `apps/web/e2e-results/screenshots/11-building-block-preset-cube-3x3x3.png`
