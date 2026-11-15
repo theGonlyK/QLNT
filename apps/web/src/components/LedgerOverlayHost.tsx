@@ -18,6 +18,7 @@ import { renderVietQRSvgString } from '../utils/vietqrLocal';
 export interface LedgerOverlayHostProps {
   isBookOpen: boolean;
   currentFloor: number;
+  totalFloors?: number;
   floorMap: FloorMapDTO;
   roomDetail: RoomDetailDTO | null;
   activeTab: RoomDetailTab;
@@ -26,6 +27,8 @@ export interface LedgerOverlayHostProps {
   tenantRewardPoints: number;
   landlordReputation: number;
   isMobileViewport?: boolean;
+  initialAnimationState?: 'OPENING' | 'OPEN' | 'CLOSING' | 'CLOSED';
+  onAnimationStateChange?: (state: 'OPENING' | 'OPEN' | 'CLOSING' | 'CLOSED') => void;
   onFlipFloor: (floorNumber: number) => void;
   onOpenRoomDetail: (roomId: string) => void;
   onSwitchTab: (roomId: string, tab: RoomDetailTab) => void;
@@ -39,6 +42,22 @@ export interface LedgerOverlayHostProps {
   onCloseBook: () => void;
 }
 
+/**
+ * Intercept closing action to execute the 450ms 3D book folding animation
+ * before calling parent's unmount/close callback.
+ */
+export function closeLedgerWithTransition(
+  onStateChange: (state: 'CLOSING' | 'CLOSED') => void,
+  onCloseComplete: () => void,
+  durationMs = 450
+): ReturnType<typeof setTimeout> {
+  onStateChange('CLOSING');
+  return setTimeout(() => {
+    onStateChange('CLOSED');
+    onCloseComplete();
+  }, durationMs);
+}
+
 const SAMPLE_LOCAL_BILL_DATA_URL =
   'data:image/svg+xml;utf8,' +
   encodeURIComponent(
@@ -48,6 +67,7 @@ const SAMPLE_LOCAL_BILL_DATA_URL =
 export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
   isBookOpen,
   currentFloor,
+  totalFloors = 3,
   floorMap,
   roomDetail,
   activeTab,
@@ -56,6 +76,8 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
   tenantRewardPoints,
   landlordReputation,
   isMobileViewport = false,
+  initialAnimationState,
+  onAnimationStateChange,
   onFlipFloor,
   onOpenRoomDetail,
   onSwitchTab,
@@ -68,6 +90,53 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
   onCloseRoomDetail,
   onCloseBook,
 }) => {
+  const [animationState, setAnimationState] = useState<
+    'OPENING' | 'OPEN' | 'CLOSING' | 'CLOSED'
+  >(() => {
+    return initialAnimationState ?? (isBookOpen ? 'OPENING' : 'CLOSED');
+  });
+
+  const closeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    onAnimationStateChange?.(animationState);
+  }, [animationState, onAnimationStateChange]);
+
+  useEffect(() => {
+    let openTimer: ReturnType<typeof setTimeout> | null = null;
+    if (isBookOpen) {
+      if (animationState === 'CLOSED') {
+        setAnimationState('OPENING');
+      }
+      openTimer = setTimeout(() => {
+        setAnimationState('OPEN');
+      }, 650);
+    } else {
+      setAnimationState('CLOSED');
+    }
+    return () => {
+      if (openTimer) clearTimeout(openTimer);
+    };
+  }, [isBookOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleInterceptCloseBook = () => {
+    if (animationState === 'CLOSING' || animationState === 'CLOSED') return;
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = closeLedgerWithTransition(
+      (s) => setAnimationState(s),
+      () => onCloseBook(),
+      450
+    );
+  };
+
   const [electricInput, setElectricInput] = useState<number>(
     roomDetail?.latestReading?.newElectric ?? 0
   );
@@ -105,7 +174,10 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
     );
   }, [roomDetail, activeAmount]);
 
-  if (!isBookOpen) {
+  if (!isBookOpen && animationState !== 'CLOSING') {
+    return null;
+  }
+  if (animationState === 'CLOSED') {
     return null;
   }
 
@@ -136,15 +208,77 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
           )
     : '';
 
+  const bookAnimState: 'opening' | 'open' | 'closing' =
+    animationState === 'OPENING'
+      ? 'opening'
+      : animationState === 'CLOSING'
+        ? 'closing'
+        : 'open';
+
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-stone-950/75 backdrop-blur-sm p-2 md:p-4 overflow-y-auto"
-      style={{ zIndex: 20 }}
+      className={`fixed inset-0 flex items-center justify-center bg-stone-950/75 p-2 md:p-4 overflow-y-auto ${
+        animationState === 'OPENING'
+          ? 'ledger-overlay-opening backdrop-blur-sm'
+          : animationState === 'CLOSING'
+            ? 'ledger-overlay-closing'
+            : 'ledger-overlay-open backdrop-blur-sm'
+      }`}
+      style={{
+        zIndex: 20,
+        transition:
+          'opacity 450ms ease, backdrop-filter 450ms ease, -webkit-backdrop-filter 450ms ease',
+      }}
       data-testid="ledger-overlay-host"
+      data-animation-state={animationState}
       role="dialog"
       aria-modal="true"
       aria-label="Lớp phủ Sổ Quản lý Ảo F04"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          handleInterceptCloseBook();
+        }
+      }}
     >
+      {/* Embedded CSS for smooth backdrop fade during opening/closing */}
+      <style>{`
+        @keyframes ledgerBackdropFadeIn {
+          0% {
+            opacity: 0;
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+          }
+          100% {
+            opacity: 1;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+          }
+        }
+        @keyframes ledgerBackdropFadeOut {
+          0% {
+            opacity: 1;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+          }
+          100% {
+            opacity: 0;
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+          }
+        }
+        .ledger-overlay-opening {
+          animation: ledgerBackdropFadeIn 650ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .ledger-overlay-closing {
+          animation: ledgerBackdropFadeOut 450ms cubic-bezier(0.4, 0, 1, 1) forwards;
+          pointer-events: none;
+        }
+        .ledger-overlay-open {
+          opacity: 1;
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+        }
+      `}</style>
       <div
         className={`flex flex-col w-full gap-3 ${
           isMobileViewport ? 'max-w-[390px]' : 'max-w-5xl'
@@ -153,8 +287,9 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
         {/* Core 2D Virtual Ledger Book (@qlnt/renderer-2d) */}
         <div className="min-h-[420px]">
           <VirtualLedgerBook
+            animationState={bookAnimState}
             floorMap={floorMap}
-            totalFloors={3}
+            totalFloors={totalFloors}
             activeFloor={currentFloor}
             onFloorChange={onFlipFloor}
             roomDetail={roomDetail}
@@ -164,7 +299,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
             }}
             onOpenRoomDetail={onOpenRoomDetail}
             onCloseRoomDetail={onCloseRoomDetail}
-            onCloseBook={onCloseBook}
+            onCloseBook={handleInterceptCloseBook}
             onApproveBill={() => {
               if (roomDetail) onApproveBillOneTouch(roomDetail.roomId);
             }}
@@ -194,10 +329,18 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
                 >
                   {/* Left: Meter Inputs (Preview vs Commit) */}
                   <div className="bg-white rounded-lg border border-stone-200 p-3 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-bold text-stone-800">
-                        Chốt chỉ số điện nước (Phòng {roomDetail.roomNumber})
-                      </h3>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div>
+                        <h3 className="text-sm font-bold text-stone-800">
+                          Chốt chỉ số điện nước (Phòng {roomDetail.roomNumber})
+                        </h3>
+                        <p
+                          className="text-[11px] font-semibold text-amber-800"
+                          data-testid="ledger-room-area-price"
+                        >
+                          {roomDetail.areaSqm} m² • {roomDetail.basePrice.toLocaleString('vi-VN')} đ/tháng
+                        </p>
+                      </div>
                       {previewState && (
                         <span
                           className="text-[11px] font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800"

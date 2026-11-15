@@ -8,7 +8,10 @@ import { App } from '../src/App';
 import { LedgerController } from '../src/bridge/ledgerController';
 import { BuildingSetupModal } from '../src/components/BuildingSetupModal';
 import { Canvas3DStage } from '../src/components/Canvas3DStage';
-import { LedgerOverlayHost } from '../src/components/LedgerOverlayHost';
+import {
+  LedgerOverlayHost,
+  closeLedgerWithTransition,
+} from '../src/components/LedgerOverlayHost';
 import { LoginScreen } from '../src/components/LoginScreen';
 
 function extractButtonStyles(html: string): string[] {
@@ -801,5 +804,152 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
     for (const btnTag of buttons) {
       expect(btnTag).toContain(`min-height:${MIN_TOUCH_TARGET_SIZE}px`);
     }
+  });
+
+  it('handles smooth opening and closing transition without abrupt unmount', async () => {
+    const controller = await createInitializedController();
+    const floorMap = controller.getFloorMapDTO(1);
+    const onCloseBook = vi.fn();
+
+    // 1. Initial render with isBookOpen = true -> starts in 'OPENING' with backdrop blur/darkening
+    const openingHtml = renderToStaticMarkup(
+      React.createElement(LedgerOverlayHost, {
+        isBookOpen: true,
+        currentFloor: 1,
+        floorMap,
+        roomDetail: null,
+        activeTab: 'PAGE_1_BILLING',
+        previewState: null,
+        auditLogs: [],
+        tenantRewardPoints: 0,
+        landlordReputation: 4.8,
+        onFlipFloor: vi.fn(),
+        onOpenRoomDetail: vi.fn(),
+        onSwitchTab: vi.fn(),
+        onPreviewBilling: vi.fn(),
+        onCommitBillingReading: vi.fn(),
+        onUploadLocalBillImage: vi.fn(),
+        onApproveBillOneTouch: vi.fn(),
+        onReportDeviceBroken: vi.fn(),
+        onResolveDeviceMaintenance: vi.fn(),
+        onCloseRoomDetail: vi.fn(),
+        onCloseBook,
+        initialAnimationState: 'OPENING',
+      })
+    );
+    expect(openingHtml).toContain('data-testid="ledger-overlay-host"');
+    expect(openingHtml).toContain('data-animation-state="OPENING"');
+    expect(openingHtml).toContain('ledger-overlay-opening');
+    expect(openingHtml).toContain('data-animation-state="opening"');
+    expect(openingHtml).toContain('book-state-opening');
+
+    // 2. Open state -> fully open book and backdrop blur
+    const openHtml = renderToStaticMarkup(
+      React.createElement(LedgerOverlayHost, {
+        isBookOpen: true,
+        currentFloor: 1,
+        floorMap,
+        roomDetail: null,
+        activeTab: 'PAGE_1_BILLING',
+        previewState: null,
+        auditLogs: [],
+        tenantRewardPoints: 0,
+        landlordReputation: 4.8,
+        onFlipFloor: vi.fn(),
+        onOpenRoomDetail: vi.fn(),
+        onSwitchTab: vi.fn(),
+        onPreviewBilling: vi.fn(),
+        onCommitBillingReading: vi.fn(),
+        onUploadLocalBillImage: vi.fn(),
+        onApproveBillOneTouch: vi.fn(),
+        onReportDeviceBroken: vi.fn(),
+        onResolveDeviceMaintenance: vi.fn(),
+        onCloseRoomDetail: vi.fn(),
+        onCloseBook,
+        initialAnimationState: 'OPEN',
+      })
+    );
+    expect(openHtml).toContain('data-animation-state="OPEN"');
+    expect(openHtml).toContain('ledger-overlay-open');
+    expect(openHtml).toContain('data-animation-state="open"');
+    expect(openHtml).toContain('book-state-open');
+
+    // 3. Closing state -> smoothly folds book back, fades backdrop, does not abruptly unmount
+    const closingHtml = renderToStaticMarkup(
+      React.createElement(LedgerOverlayHost, {
+        isBookOpen: true,
+        currentFloor: 1,
+        floorMap,
+        roomDetail: null,
+        activeTab: 'PAGE_1_BILLING',
+        previewState: null,
+        auditLogs: [],
+        tenantRewardPoints: 0,
+        landlordReputation: 4.8,
+        onFlipFloor: vi.fn(),
+        onOpenRoomDetail: vi.fn(),
+        onSwitchTab: vi.fn(),
+        onPreviewBilling: vi.fn(),
+        onCommitBillingReading: vi.fn(),
+        onUploadLocalBillImage: vi.fn(),
+        onApproveBillOneTouch: vi.fn(),
+        onReportDeviceBroken: vi.fn(),
+        onResolveDeviceMaintenance: vi.fn(),
+        onCloseRoomDetail: vi.fn(),
+        onCloseBook,
+        initialAnimationState: 'CLOSING',
+      })
+    );
+    expect(closingHtml).toContain('data-animation-state="CLOSING"');
+    expect(closingHtml).toContain('ledger-overlay-closing');
+    expect(closingHtml).toContain('data-animation-state="closing"');
+    expect(closingHtml).toContain('book-state-closing');
+
+    // 4. Closed state (or isBookOpen = false) -> returns null / unmounts
+    const closedHtml = renderToStaticMarkup(
+      React.createElement(LedgerOverlayHost, {
+        isBookOpen: false,
+        currentFloor: 1,
+        floorMap,
+        roomDetail: null,
+        activeTab: 'PAGE_1_BILLING',
+        previewState: null,
+        auditLogs: [],
+        tenantRewardPoints: 0,
+        landlordReputation: 4.8,
+        onFlipFloor: vi.fn(),
+        onOpenRoomDetail: vi.fn(),
+        onSwitchTab: vi.fn(),
+        onPreviewBilling: vi.fn(),
+        onCommitBillingReading: vi.fn(),
+        onUploadLocalBillImage: vi.fn(),
+        onApproveBillOneTouch: vi.fn(),
+        onReportDeviceBroken: vi.fn(),
+        onResolveDeviceMaintenance: vi.fn(),
+        onCloseRoomDetail: vi.fn(),
+        onCloseBook,
+      })
+    );
+    expect(closedHtml).toBe('');
+
+    // 5. Test close interception and timer lifecycle (450ms transition)
+    vi.useFakeTimers();
+    const onStateChange = vi.fn();
+    const timer = closeLedgerWithTransition(onStateChange, onCloseBook, 450);
+
+    expect(onStateChange).toHaveBeenCalledWith('CLOSING');
+    expect(onCloseBook).not.toHaveBeenCalled();
+
+    // After 200ms into fold animation: still closing, not unmounted
+    vi.advanceTimersByTime(200);
+    expect(onCloseBook).not.toHaveBeenCalled();
+
+    // After 450ms book fold complete: calls parent onCloseBook and marks CLOSED
+    vi.advanceTimersByTime(250);
+    expect(onStateChange).toHaveBeenCalledWith('CLOSED');
+    expect(onCloseBook).toHaveBeenCalledTimes(1);
+
+    clearTimeout(timer);
+    vi.useRealTimers();
   });
 });
