@@ -1,10 +1,21 @@
 import 'fake-indexeddb/auto';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppDatabase, useLedgerStore } from '@qlnt/domain-core';
 import type { IGameRenderer } from '@qlnt/shared-types';
-import { LedgerController } from '../src/bridge/ledgerController';
+import {
+  BUILDING_BLOCK_PRESETS,
+  clearStorageForTesting,
+  LedgerController,
+} from '../src/bridge/ledgerController';
+import { useRendererBridge } from '../src/bridge/useRendererBridge';
 
-function createMockRenderer(): IGameRenderer {
+function createMockRenderer(): IGameRenderer & {
+  transitionToFloor: ReturnType<typeof vi.fn>;
+  renderFloorCutaway: ReturnType<typeof vi.fn>;
+  transitionToBuilding: ReturnType<typeof vi.fn>;
+} {
   return {
     renderBuilding: vi.fn(async () => {}),
     spawnAvatar: vi.fn(),
@@ -19,6 +30,9 @@ function createMockRenderer(): IGameRenderer {
     refreshRoomDetailView: vi.fn(),
     closeRoomDetailToFloorMap: vi.fn(async () => {}),
     closeLedgerBookTo3DScene: vi.fn(async () => {}),
+    transitionToFloor: vi.fn(async () => {}),
+    renderFloorCutaway: vi.fn(async () => {}),
+    transitionToBuilding: vi.fn(async () => {}),
   };
 }
 
@@ -31,6 +45,7 @@ describe('LedgerController', () => {
       await testDb.delete();
     }
     createdDbs.length = 0;
+    clearStorageForTesting();
   });
 
   async function setupController() {
@@ -41,6 +56,19 @@ describe('LedgerController', () => {
     await controller.initialize();
     return { testDb, renderer, controller };
   }
+
+  it('defines BUILDING_BLOCK_PRESETS catalog correctly', () => {
+    expect(BUILDING_BLOCK_PRESETS).toHaveLength(6);
+    const ids = BUILDING_BLOCK_PRESETS.map((p) => p.id);
+    expect(ids).toEqual([
+      'TOWER_2x2x6',
+      'CCMN_3x2x4',
+      'CUBE_3x3x3',
+      'COMPACT_2x2x3',
+      'LONG_4x2x2',
+      'CUSTOM',
+    ]);
+  });
 
   it('separates Preview State from Commit State without mutating IndexedDB during preview', async () => {
     const { testDb, renderer, controller } = await setupController();
@@ -136,5 +164,240 @@ describe('LedgerController', () => {
     await controller.closeLedgerBookTo3DScene();
     expect(useLedgerStore.getState().isBookOpen).toBe(false);
     expect(renderer.closeLedgerBookTo3DScene).toHaveBeenCalledTimes(1);
+  });
+
+  it('supports Landlord local login, registration, logout, and Building area/room count setup', async () => {
+    const { controller, renderer } = await setupController();
+
+    // 1. Default demo login & invalid login check
+    await expect(controller.loginLandlord('0988123456', 'wrong-pin')).rejects.toThrow(
+      /Mã PIN không chính xác/
+    );
+    const demoLandlord = await controller.loginLandlord('0988123456', '123456');
+    expect(demoLandlord.name).toBe('Nguyễn Minh Anh');
+    expect(controller.isAuthenticated()).toBe(true);
+
+    // 2. Register a new Landlord
+    const newLandlord = await controller.registerLandlord({
+      name: 'Trần Quốc Tuấn',
+      phone: '0912345678',
+      email: 'tuan.tran@qlnt.local',
+      pin: '654321',
+      packageTier: 'PRO',
+    });
+    expect(newLandlord.name).toBe('Trần Quốc Tuấn');
+    expect(controller.getLandlord()?.id).toBe(newLandlord.id);
+    expect(controller.isAuthenticated()).toBe(true);
+
+    // 3. Register / Update Building with 4 floors x 3 rooms/floor = 12 rooms and custom area_sqm
+    const drafts = controller.buildRoomSetupDrafts({
+      totalFloors: 4,
+      roomsPerFloor: 3,
+      defaultAreaSqm: 25,
+      defaultBasePrice: 4000000,
+    });
+    expect(drafts).toHaveLength(12);
+    // Customize P101 to 30m2 and P403 to 35m2
+    drafts[0]!.areaSqm = 30;
+    drafts[0]!.basePrice = 4500000;
+    drafts[11]!.areaSqm = 35;
+    drafts[11]!.basePrice = 5200000;
+
+    const updatedProperty = await controller.registerOrUpdateBuilding({
+      propertyName: 'Chung cư Mini Tuấn Anh — Cầu Giấy',
+      address: 'Số 88 Cầu Giấy, Hà Nội',
+      totalFloors: 4,
+      roomsPerFloor: 3,
+      waterCalcMethod: 'PER_M3',
+      electricUnitPrice: 4000,
+      waterUnitPrice: 32000,
+      serviceFee: 180000,
+      roomsDraft: drafts,
+    });
+
+    expect(updatedProperty.total_floors).toBe(4);
+    expect(updatedProperty.name).toBe('Chung cư Mini Tuấn Anh — Cầu Giấy');
+
+    const rooms = controller.getRooms();
+    expect(rooms).toHaveLength(12);
+    const p101 = rooms.find((r) => r.room_number === 'P101')!;
+    const p403 = rooms.find((r) => r.room_number === 'P403')!;
+    expect(p101.area_sqm).toBe(30);
+    expect(p101.base_price).toBe(4500000);
+    expect(p403.floor_number).toBe(4);
+    expect(p403.area_sqm).toBe(35);
+
+    const summary = controller.getSummaryStats();
+    // 10 rooms * 25m2 + 30m2 + 35m2 = 315m2
+    expect(summary.totalRooms).toBe(12);
+    expect(summary.totalAreaSqm).toBe(315);
+
+    expect(renderer.renderBuilding).toHaveBeenLastCalledWith({
+      propertyId: updatedProperty.id,
+      totalFloors: 4,
+      roomsPerFloor: 3,
+      position: { x: 0, y: 0, z: 0 },
+      blockGrid: { cols: 2, rows: 2 },
+    });
+
+    // 4. Logout & re-login with new Landlord credentials
+    controller.logoutLandlord();
+    expect(controller.isAuthenticated()).toBe(false);
+    const relogged = await controller.loginLandlord('0912345678', '654321');
+    expect(relogged.id).toBe(newLandlord.id);
+    expect(controller.isAuthenticated()).toBe(true);
+  });
+
+  it('transitions between Building View and Floor 3D Cutaway View, and opens F04 from floor', async () => {
+    const { controller, renderer } = await setupController();
+
+    expect(controller.getViewMode()).toBe('BUILDING');
+    expect(controller.getActiveFloorIndex()).toBe(0);
+
+    // Select Floor 2 (floorIndex = 1)
+    await controller.selectFloor(1);
+    expect(controller.getViewMode()).toBe('FLOOR_3D');
+    expect(controller.getActiveFloorIndex()).toBe(1);
+    expect(renderer.transitionToFloor).toHaveBeenCalledWith(1);
+    expect(renderer.renderFloorCutaway).toHaveBeenCalledWith(
+      1,
+      expect.arrayContaining([
+        expect.objectContaining({
+          roomNumber: 'P201',
+          floorIndex: 1,
+          floorNumber: 2,
+        }),
+      ])
+    );
+
+    // Open Room Detail F04 from floor cutaway
+    const p202 = controller.getRooms().find((r) => r.room_number === 'P202')!;
+    await controller.openRoomDetailFromFloor(p202.id, 'PAGE_1_BILLING');
+    expect(useLedgerStore.getState().isBookOpen).toBe(true);
+    expect(useLedgerStore.getState().selectedRoomId).toBe(p202.id);
+    expect(renderer.openRoomDetailSinglePage).toHaveBeenCalled();
+
+    // Back to building
+    await controller.backToBuilding();
+    expect(controller.getViewMode()).toBe('BUILDING');
+    expect(renderer.transitionToBuilding).toHaveBeenCalled();
+  });
+
+  it('applyBuildingBlockPreset updates totalFloors and room count to match preset', async () => {
+    const { testDb, renderer, controller } = await setupController();
+
+    await controller.applyBuildingBlockPreset('TOWER_2x2x6');
+    expect(controller.property?.total_floors).toBe(6);
+    expect(controller.rooms.length).toBe(24);
+    expect(controller.getRoomsPerFloor()).toBe(4);
+    expect(controller.getCurrentBlockPresetId()).toBe('TOWER_2x2x6');
+    expect(controller.getCurrentBlockGrid()).toEqual({ cols: 2, rows: 2 });
+
+    const dbProperty = await testDb.properties.get(controller.property!.id);
+    expect(dbProperty?.total_floors).toBe(6);
+    const dbRooms = await testDb.rooms.toArray();
+    expect(dbRooms.length).toBe(24);
+    expect(renderer.renderBuilding).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        propertyId: controller.property!.id,
+        totalFloors: 6,
+        roomsPerFloor: 4,
+        blockGrid: { cols: 2, rows: 2 },
+      })
+    );
+  });
+
+  it('applyBuildingBlockPreset supports CUBE_3x3x3 and prunes rooms when switching to COMPACT_2x2x3', async () => {
+    const { testDb, controller } = await setupController();
+
+    // Expand to CUBE_3x3x3: 3 cols x 3 rows x 3 floors = 27 rooms
+    await controller.applyBuildingBlockPreset('CUBE_3x3x3');
+    expect(controller.property?.total_floors).toBe(3);
+    expect(controller.rooms.length).toBe(27);
+    expect(controller.getRoomsPerFloor()).toBe(9);
+    expect(controller.getCurrentBlockPresetId()).toBe('CUBE_3x3x3');
+    expect(controller.getCurrentBlockGrid()).toEqual({ cols: 3, rows: 3 });
+
+    let dbRooms = await testDb.rooms.toArray();
+    expect(dbRooms.length).toBe(27);
+    expect(dbRooms.some((r) => r.room_number === 'P109')).toBe(true);
+
+    // Shrink down to COMPACT_2x2x3: 2 cols x 2 rows x 3 floors = 12 rooms
+    await controller.applyBuildingBlockPreset('COMPACT_2x2x3');
+    expect(controller.property?.total_floors).toBe(3);
+    expect(controller.rooms.length).toBe(12);
+    expect(controller.getRoomsPerFloor()).toBe(4);
+    expect(controller.getCurrentBlockPresetId()).toBe('COMPACT_2x2x3');
+    expect(controller.getCurrentBlockGrid()).toEqual({ cols: 2, rows: 2 });
+
+    dbRooms = await testDb.rooms.toArray();
+    expect(dbRooms.length).toBe(12);
+    expect(dbRooms.some((r) => r.room_number === 'P109')).toBe(false);
+    expect(dbRooms.some((r) => r.room_number === 'P101')).toBe(true);
+  });
+
+  it('applyBuildingBlockPreset supports CUSTOM preset with customConfig', async () => {
+    const { testDb, controller } = await setupController();
+
+    await controller.applyBuildingBlockPreset('CUSTOM', { cols: 3, rows: 1, floors: 5 });
+    expect(controller.property?.total_floors).toBe(5);
+    expect(controller.rooms.length).toBe(15);
+    expect(controller.getRoomsPerFloor()).toBe(3);
+    expect(controller.getCurrentBlockPresetId()).toBe('CUSTOM');
+    expect(controller.getCurrentBlockGrid()).toEqual({ cols: 3, rows: 1 });
+
+    const dbRooms = await testDb.rooms.toArray();
+    expect(dbRooms.length).toBe(15);
+  });
+
+  it('applyBuildingBlockPreset supports CCMN_3x2x4 and LONG_4x2x2 presets', async () => {
+    const { controller } = await setupController();
+
+    // CCMN_3x2x4: 3 cols x 2 rows x 4 floors = 24 rooms, 6 rooms/floor
+    await controller.applyBuildingBlockPreset('CCMN_3x2x4');
+    expect(controller.property?.total_floors).toBe(4);
+    expect(controller.rooms.length).toBe(24);
+    expect(controller.getRoomsPerFloor()).toBe(6);
+    expect(controller.getCurrentBlockPresetId()).toBe('CCMN_3x2x4');
+    expect(controller.getCurrentBlockGrid()).toEqual({ cols: 3, rows: 2 });
+
+    // LONG_4x2x2: 4 cols x 2 rows x 2 floors = 16 rooms, 8 rooms/floor
+    await controller.applyBuildingBlockPreset('LONG_4x2x2');
+    expect(controller.property?.total_floors).toBe(2);
+    expect(controller.rooms.length).toBe(16);
+    expect(controller.getRoomsPerFloor()).toBe(8);
+    expect(controller.getCurrentBlockPresetId()).toBe('LONG_4x2x2');
+    expect(controller.getCurrentBlockGrid()).toEqual({ cols: 4, rows: 2 });
+
+    // Unknown preset rejection
+    await expect(controller.applyBuildingBlockPreset('INVALID_PRESET')).rejects.toThrow(
+      /Không tìm thấy cấu hình preset khối tòa nhà/
+    );
+  });
+
+  it('useRendererBridge exposes currentBlockPresetId, currentBlockGrid, and applyBuildingBlockPreset', async () => {
+    const { controller } = await setupController();
+    let bridgeResult: ReturnType<typeof useRendererBridge> | null = null;
+    function TestComponent() {
+      const bridge = useRendererBridge(controller);
+      bridgeResult = bridge;
+      return React.createElement(
+        'div',
+        { 'data-preset': bridge.currentBlockPresetId },
+        bridge.currentBlockPresetId
+      );
+    }
+    renderToStaticMarkup(React.createElement(TestComponent));
+    expect(bridgeResult).not.toBeNull();
+    expect(bridgeResult!.currentBlockPresetId).toBe('COMPACT_2x2x3');
+    expect(bridgeResult!.currentBlockGrid).toEqual({ cols: 2, rows: 2 });
+    expect(typeof bridgeResult!.applyBuildingBlockPreset).toBe('function');
+
+    await bridgeResult!.applyBuildingBlockPreset('TOWER_2x2x6');
+    renderToStaticMarkup(React.createElement(TestComponent));
+    expect(bridgeResult!.currentBlockPresetId).toBe('TOWER_2x2x6');
+    expect(bridgeResult!.currentBlockGrid).toEqual({ cols: 2, rows: 2 });
+    expect(bridgeResult!.totalFloors).toBe(6);
+    expect(bridgeResult!.summary.totalRooms).toBe(24);
   });
 });

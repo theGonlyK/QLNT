@@ -28,10 +28,236 @@ import {
 } from '@qlnt/domain-core';
 import {
   createHanoiMotelSeed,
+  SEED_LANDLORD_ID,
   SEED_MONTH_PERIOD,
   seedDatabaseIfNeeded,
 } from '../seed/hanoiMotelSeed';
 import { GAME_COPYWRITING } from '../copywriting/gameCopywriting';
+
+const AUTH_SESSION_STORAGE_KEY = 'qlnt_auth_session_v1';
+const LANDLORD_PINS_STORAGE_KEY = 'qlnt_landlord_pins_v1';
+const BUILDING_BLOCK_PRESET_STORAGE_KEY = 'qlnt_building_block_preset_v1';
+const DEFAULT_SEED_PIN = '123456';
+const memoryStorage = new Map<string, string>();
+
+function readStorageItem(key: string): string | null {
+  if (typeof globalThis !== 'undefined' && 'localStorage' in globalThis && globalThis.localStorage) {
+    return globalThis.localStorage.getItem(key);
+  }
+  return memoryStorage.get(key) ?? null;
+}
+
+function writeStorageItem(key: string, value: string): void {
+  if (typeof globalThis !== 'undefined' && 'localStorage' in globalThis && globalThis.localStorage) {
+    globalThis.localStorage.setItem(key, value);
+    return;
+  }
+  memoryStorage.set(key, value);
+}
+
+function removeStorageItem(key: string): void {
+  if (typeof globalThis !== 'undefined' && 'localStorage' in globalThis && globalThis.localStorage) {
+    globalThis.localStorage.removeItem(key);
+    return;
+  }
+  memoryStorage.delete(key);
+}
+
+export function clearStorageForTesting(): void {
+  memoryStorage.clear();
+  if (typeof globalThis !== 'undefined' && 'localStorage' in globalThis && globalThis.localStorage) {
+    globalThis.localStorage.clear();
+  }
+}
+
+function readLandlordPins(): Record<string, string> {
+  const raw = readStorageItem(LANDLORD_PINS_STORAGE_KEY);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const pins: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === 'string') {
+        pins[k] = v;
+      }
+    }
+    return pins;
+  } catch {
+    return {};
+  }
+}
+
+function writeLandlordPins(pins: Record<string, string>): void {
+  writeStorageItem(LANDLORD_PINS_STORAGE_KEY, JSON.stringify(pins));
+}
+
+function buildStandardRoomDevices(roomId: string): RoomDeviceDTO[] {
+  const catalog: Array<{ suffix: string; name: string; category: RoomDeviceDTO['category'] }> = [
+    { suffix: 'ac', name: 'Điều hòa Inverter', category: 'FIXED' },
+    { suffix: 'heater', name: 'Bình nóng lạnh', category: 'FIXED' },
+    { suffix: 'bed', name: 'Giường gỗ 1m6', category: 'FURNITURE' },
+    { suffix: 'wardrobe', name: 'Tủ quần áo 2 cánh', category: 'FURNITURE' },
+    { suffix: 'meter', name: 'Công tơ điện nước', category: 'METER' },
+  ];
+  const today = new Date().toISOString().slice(0, 10);
+  return catalog.map((item) => ({
+    deviceId: `${roomId}-${item.suffix}`,
+    name: item.name,
+    category: item.category,
+    isBroken: false,
+    lastMaintained: today,
+  }));
+}
+
+export interface BuildingAreaPreset {
+  id: 'STANDARD_20' | 'MEZZANINE_25' | 'STUDIO_35';
+  label: string;
+  description: string;
+  areaSqm: number;
+  basePrice: number;
+}
+
+export const BUILDING_AREA_PRESETS: readonly BuildingAreaPreset[] = [
+  {
+    id: 'STANDARD_20',
+    label: 'Phòng đơn (20 m²)',
+    description: 'Phòng trọ khép kín tiêu chuẩn',
+    areaSqm: 20,
+    basePrice: 3200000,
+  },
+  {
+    id: 'MEZZANINE_25',
+    label: 'Gác lửng (25 m²)',
+    description: 'Phòng có gác xép tối ưu không gian',
+    areaSqm: 25,
+    basePrice: 4000000,
+  },
+  {
+    id: 'STUDIO_35',
+    label: 'Studio CCMN (35 m²)',
+    description: 'Căn hộ studio chung cư mini đủ nội thất',
+    areaSqm: 35,
+    basePrice: 5200000,
+  },
+] as const;
+
+export type BuildingBlockPresetId =
+  | 'TOWER_2x2x6'
+  | 'CCMN_3x2x4'
+  | 'CUBE_3x3x3'
+  | 'COMPACT_2x2x3'
+  | 'LONG_4x2x2'
+  | 'CUSTOM';
+
+export interface BuildingBlockPreset {
+  id: BuildingBlockPresetId;
+  name: string;
+  label: string;
+  description: string;
+  cols: number; // X: số phòng ngang
+  rows: number; // Z: số dãy phòng sâu
+  floors: number; // Y: số tầng
+  roomsPerFloor: number; // cols * rows
+  totalRooms: number; // cols * rows * floors
+}
+
+export const BUILDING_BLOCK_PRESETS: readonly BuildingBlockPreset[] = [
+  {
+    id: 'TOWER_2x2x6',
+    name: 'Tháp Nhà Ống (2x2x6)',
+    label: 'Tháp Nhà Ống (2x2x6)',
+    description: '2 phòng ngang × 2 dãy sâu × 6 tầng (24 phòng)',
+    cols: 2,
+    rows: 2,
+    floors: 6,
+    roomsPerFloor: 4,
+    totalRooms: 24,
+  },
+  {
+    id: 'CCMN_3x2x4',
+    name: 'Chung Cư Mini (3x2x4)',
+    label: 'Chung Cư Mini (3x2x4)',
+    description: '3 phòng ngang × 2 dãy sâu × 4 tầng (24 phòng)',
+    cols: 3,
+    rows: 2,
+    floors: 4,
+    roomsPerFloor: 6,
+    totalRooms: 24,
+  },
+  {
+    id: 'CUBE_3x3x3',
+    name: 'Khối Lập Phương (3x3x3)',
+    label: 'Khối Lập Phương (3x3x3)',
+    description: '3 phòng ngang × 3 dãy sâu × 3 tầng (27 phòng)',
+    cols: 3,
+    rows: 3,
+    floors: 3,
+    roomsPerFloor: 9,
+    totalRooms: 27,
+  },
+  {
+    id: 'COMPACT_2x2x3',
+    name: 'Nhà Phố Tiêu Chuẩn (2x2x3)',
+    label: 'Nhà Phố Tiêu Chuẩn (2x2x3)',
+    description: '2 phòng ngang × 2 dãy sâu × 3 tầng (12 phòng)',
+    cols: 2,
+    rows: 2,
+    floors: 3,
+    roomsPerFloor: 4,
+    totalRooms: 12,
+  },
+  {
+    id: 'LONG_4x2x2',
+    name: 'Dãy Trọ Ngang (4x2x2)',
+    label: 'Dãy Trọ Ngang (4x2x2)',
+    description: '4 phòng ngang × 2 dãy sâu × 2 tầng (16 phòng)',
+    cols: 4,
+    rows: 2,
+    floors: 2,
+    roomsPerFloor: 8,
+    totalRooms: 16,
+  },
+  {
+    id: 'CUSTOM',
+    name: 'Tùy Chỉnh Tự Do',
+    label: 'Tùy Chỉnh Tự Do',
+    description: 'Tùy chỉnh số phòng ngang X, dãy Z và tầng Y',
+    cols: 2,
+    rows: 2,
+    floors: 3,
+    roomsPerFloor: 4,
+    totalRooms: 12,
+  },
+] as const;
+
+export interface RegisterLandlordInput {
+  name: string;
+  phone: string;
+  email?: string;
+  pin: string;
+  packageTier?: Landlord['package_tier'];
+}
+
+export interface RoomSetupDraft {
+  roomNumber: string;
+  floorNumber: number;
+  areaSqm: number;
+  basePrice: number;
+  depositAmount?: number;
+  status?: Room['status'];
+}
+
+export interface BuildingRegistrationInput {
+  propertyName: string;
+  address: string;
+  totalFloors: number;
+  roomsPerFloor: number;
+  waterCalcMethod: Property['water_calc_method'];
+  electricUnitPrice: number;
+  waterUnitPrice: number;
+  serviceFee: number;
+  roomsDraft: RoomSetupDraft[];
+}
 
 export interface BillingPreviewState {
   roomId: string;
@@ -56,6 +282,8 @@ export interface RoomSummarySnapshot {
   pendingVerifyCount: number;
   brokenDeviceCount: number;
   vacantCount: number;
+  totalAreaSqm: number;
+  averageAreaSqm: number;
 }
 
 export interface RoomQuickPickItem {
@@ -66,14 +294,60 @@ export interface RoomQuickPickItem {
   billingStatus?: Billing['status'];
 }
 
+export type ViewMode = 'BUILDING' | 'FLOOR_3D';
+
+export interface FloorCutawayRoomConfig {
+  roomId: string;
+  roomNumber: string;
+  floorIndex: number;
+  floorNumber: number;
+  roomIndex: number;
+  status: Room['status'];
+  areaSqm: number;
+  basePrice: number;
+  tenantName?: string;
+  noticeType: RoomNoticeType;
+  hasPaymentNotice: boolean;
+  hasPaymentDue: boolean;
+  hasBrokenDevice: boolean;
+  devices: RoomDeviceDTO[];
+  currentTenant?: {
+    tenantId: string;
+    fullName: string;
+    phone: string;
+    hometown?: string;
+    tempResidenceStatus?: string;
+  };
+  latestBilling?: {
+    billingId: string;
+    monthPeriod: string;
+    roomCharge: number;
+    electricCharge: number;
+    waterCharge: number;
+    serviceCharge: number;
+    totalAmount: number;
+    status: Billing['status'];
+    billImageUrl?: string;
+  };
+  latestReading?: {
+    oldElectric: number;
+    newElectric: number;
+    oldWater: number;
+    newWater: number;
+  };
+}
+
 export class LedgerController {
   private readonly database: AppDatabase;
   private renderer: IGameRenderer | null;
   private monthPeriod: string;
 
-  private landlord: Landlord | null = null;
-  private property: Property | null = null;
-  private rooms: Room[] = [];
+  public landlord: Landlord | null = null;
+  public property: Property | null = null;
+  public rooms: Room[] = [];
+  public currentBlockPresetId: BuildingBlockPresetId = 'COMPACT_2x2x3';
+  public currentBlockGrid: { cols: number; rows: number } = { cols: 2, rows: 2 };
+
   private tenants: Tenant[] = [];
   private meterReadings: MeterReading[] = [];
   private billings: Billing[] = [];
@@ -82,7 +356,10 @@ export class LedgerController {
   private roomAuditLogs: RoomAuditLog[] = [];
   private devicesByRoomId: Record<string, RoomDeviceDTO[]> = {};
   private previewByRoomId: Record<string, BillingPreviewState> = {};
+  private authenticatedLandlordId: string | null = null;
   private initialized = false;
+  private viewMode: ViewMode = 'BUILDING';
+  private activeFloorIndex = 0;
 
   constructor(options?: {
     database?: AppDatabase;
@@ -121,6 +398,39 @@ export class LedgerController {
     return this.initialized;
   }
 
+  isAuthenticated(): boolean {
+    return this.authenticatedLandlordId !== null && this.landlord !== null;
+  }
+
+  getViewMode(): ViewMode {
+    return this.viewMode;
+  }
+
+  getActiveFloorIndex(): number {
+    return this.activeFloorIndex;
+  }
+
+  getCurrentBlockPresetId(): BuildingBlockPresetId {
+    return this.currentBlockPresetId;
+  }
+
+  getCurrentBlockGrid(): { cols: number; rows: number } {
+    return { ...this.currentBlockGrid };
+  }
+
+  getRoomsPerFloor(): number {
+    if (!this.property || this.property.total_floors <= 0) {
+      return Math.max(1, this.rooms.length);
+    }
+    return Math.max(
+      1,
+      ...Array.from({ length: this.property.total_floors }, (_, idx) => {
+        const floor = idx + 1;
+        return this.rooms.filter((r) => r.floor_number === floor).length;
+      })
+    );
+  }
+
   async initialize(): Promise<void> {
     await seedDatabaseIfNeeded(this.database);
     const seed = createHanoiMotelSeed();
@@ -147,7 +457,28 @@ export class LedgerController {
       this.database.room_audit_logs.toArray(),
     ]);
 
-    this.landlord = landlords[0] ?? seed.landlord;
+    const pins = readLandlordPins();
+    const seedLandlord = landlords.find((l) => l.id === SEED_LANDLORD_ID) ?? landlords[0] ?? seed.landlord;
+    if (!pins[seedLandlord.id]) {
+      pins[seedLandlord.id] = DEFAULT_SEED_PIN;
+      writeLandlordPins(pins);
+    }
+
+    let restoredLandlord: Landlord | null = null;
+    const rawSession = readStorageItem(AUTH_SESSION_STORAGE_KEY);
+    if (rawSession) {
+      try {
+        const parsed = JSON.parse(rawSession) as { landlordId?: string };
+        if (parsed.landlordId) {
+          restoredLandlord = landlords.find((l) => l.id === parsed.landlordId) ?? null;
+        }
+      } catch {
+        restoredLandlord = null;
+      }
+    }
+
+    this.authenticatedLandlordId = restoredLandlord ? restoredLandlord.id : null;
+    this.landlord = restoredLandlord ?? seedLandlord;
     this.property = properties[0] ?? seed.property;
     this.rooms = rooms.sort((a, b) => a.room_number.localeCompare(b.room_number));
     this.tenants = tenants;
@@ -160,7 +491,9 @@ export class LedgerController {
     // Build devices map from seed catalog and reflect active maintenance requests
     const devicesMap: Record<string, RoomDeviceDTO[]> = {};
     for (const room of this.rooms) {
-      const baseDevices = (seed.devicesByRoomId[room.id] ?? []).map((d) => ({ ...d }));
+      const baseDevices = (
+        seed.devicesByRoomId[room.id] ?? buildStandardRoomDevices(room.id)
+      ).map((d) => ({ ...d }));
       const activeAlerts = this.maintenanceRequests.filter(
         (m) => m.room_id === room.id && m.status !== 'RESOLVED'
       );
@@ -171,6 +504,30 @@ export class LedgerController {
       devicesMap[room.id] = baseDevices;
     }
     this.devicesByRoomId = devicesMap;
+
+    const savedPresetId = readStorageItem(BUILDING_BLOCK_PRESET_STORAGE_KEY) as BuildingBlockPresetId | null;
+    if (savedPresetId && BUILDING_BLOCK_PRESETS.some((p) => p.id === savedPresetId)) {
+      this.currentBlockPresetId = savedPresetId;
+      const matched = BUILDING_BLOCK_PRESETS.find((p) => p.id === savedPresetId);
+      if (matched && matched.id !== 'CUSTOM') {
+        this.currentBlockGrid = { cols: matched.cols, rows: matched.rows };
+      }
+    } else {
+      const matched = BUILDING_BLOCK_PRESETS.find(
+        (p) =>
+          p.id !== 'CUSTOM' &&
+          p.floors === this.property?.total_floors &&
+          p.totalRooms === this.rooms.length
+      );
+      if (matched) {
+        this.currentBlockPresetId = matched.id;
+        this.currentBlockGrid = { cols: matched.cols, rows: matched.rows };
+      } else {
+        this.currentBlockPresetId = 'COMPACT_2x2x3';
+        this.currentBlockGrid = { cols: 2, rows: 2 };
+      }
+    }
+
     this.initialized = true;
 
     if (this.renderer) {
@@ -181,12 +538,54 @@ export class LedgerController {
   async syncAllToRenderer(): Promise<void> {
     if (!this.renderer || !this.property) return;
 
+    const roomsPerFloor = this.getRoomsPerFloor();
     await this.renderer.renderBuilding({
       propertyId: this.property.id,
       totalFloors: this.property.total_floors,
-      roomsPerFloor: 4,
+      roomsPerFloor,
       position: { x: 0, y: 0, z: 0 },
-    });
+      blockGrid: this.currentBlockGrid,
+    } as any);
+
+    const roomsByFloor = new Map<number, Room[]>();
+    for (const room of this.rooms) {
+      const list = roomsByFloor.get(room.floor_number) ?? [];
+      list.push(room);
+      roomsByFloor.set(room.floor_number, list);
+    }
+
+    const mappings: Array<{
+      roomId: string;
+      floorIndex: number;
+      roomIndex: number;
+      roomNumber?: string;
+    }> = [];
+    for (const [floorNumber, floorRooms] of roomsByFloor.entries()) {
+      const sortedFloorRooms = [...floorRooms].sort((a, b) =>
+        a.room_number.localeCompare(b.room_number)
+      );
+      sortedFloorRooms.forEach((room, roomIndex) => {
+        mappings.push({
+          roomId: room.id,
+          floorIndex: floorNumber - 1,
+          roomIndex,
+          roomNumber: room.room_number,
+        });
+      });
+    }
+
+    (
+      this.renderer as {
+        bindRoomIds?: (
+          items: Array<{
+            roomId: string;
+            floorIndex: number;
+            roomIndex: number;
+            roomNumber?: string;
+          }>
+        ) => void;
+      }
+    ).bindRoomIds?.(mappings);
 
     for (const room of this.rooms) {
       const notice = this.getRoomNoticeType(room.id);
@@ -198,6 +597,413 @@ export class LedgerController {
           this.renderer.setDeviceStatus(room.id, device.deviceId, 'BROKEN');
         }
       }
+    }
+
+    if (this.viewMode === 'FLOOR_3D') {
+      const configs = this.getFloorCutawayRoomConfigs(this.activeFloorIndex);
+      const r = this.renderer as {
+        renderFloorCutaway?: (floorIndex: number, configs: FloorCutawayRoomConfig[]) => Promise<void>;
+      };
+      await r?.renderFloorCutaway?.(this.activeFloorIndex, configs);
+    }
+  }
+
+  // === Local-First Landlord Authentication & Building Registration ===
+
+  async loginLandlord(phoneOrEmail: string, pin: string): Promise<Landlord> {
+    const identity = phoneOrEmail.trim().toLowerCase();
+    const normalizedPin = pin.trim();
+    if (!identity || !normalizedPin) {
+      throw new Error('Vui lòng nhập đầy đủ Số điện thoại/Email và Mã PIN.');
+    }
+
+    const landlords = await this.database.landlords.toArray();
+    const pool = landlords.length > 0 ? landlords : this.landlord ? [this.landlord] : [];
+    const matched = pool.find(
+      (l) => l.phone.trim().toLowerCase() === identity || l.email.trim().toLowerCase() === identity
+    );
+    if (!matched) {
+      throw new Error('Không tìm thấy tài khoản Chủ trọ với SĐT hoặc Email này.');
+    }
+
+    const pins = readLandlordPins();
+    const expectedPin =
+      pins[matched.id] ??
+      (matched.id === SEED_LANDLORD_ID || matched.phone === '0988123456'
+        ? DEFAULT_SEED_PIN
+        : undefined);
+
+    if (!expectedPin || expectedPin !== normalizedPin) {
+      throw new Error('Mã PIN không chính xác. Vui lòng kiểm tra lại.');
+    }
+
+    this.landlord = matched;
+    this.authenticatedLandlordId = matched.id;
+    writeStorageItem(
+      AUTH_SESSION_STORAGE_KEY,
+      JSON.stringify({ landlordId: matched.id, loggedInAt: new Date().toISOString() })
+    );
+    return matched;
+  }
+
+  async loginDemoLandlord(): Promise<Landlord> {
+    return this.loginLandlord('0988123456', DEFAULT_SEED_PIN);
+  }
+
+  async registerLandlord(input: RegisterLandlordInput): Promise<Landlord> {
+    const name = input.name.trim();
+    const phone = input.phone.trim();
+    const pin = input.pin.trim();
+
+    if (name.length < 2) {
+      throw new Error('Họ tên chủ trọ phải có ít nhất 2 ký tự.');
+    }
+    if (!/^0\d{9}$/.test(phone)) {
+      throw new Error('Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.');
+    }
+    if (pin.length < 4 || pin.length > 8) {
+      throw new Error('Mã PIN phải có từ 4 đến 8 ký tự.');
+    }
+
+    const existingLandlords = await this.database.landlords.toArray();
+    if (existingLandlords.some((l) => l.phone.trim() === phone)) {
+      throw new Error('Số điện thoại này đã được đăng ký.');
+    }
+
+    const now = new Date().toISOString();
+    const newLandlord: Landlord = {
+      id: generateUUID(),
+      name,
+      phone,
+      email: input.email?.trim() || `${phone}@qlnt.local`,
+      reputation_stars: 5.0,
+      package_tier: input.packageTier ?? 'FREE',
+      created_at: now,
+      updated_at: now,
+    };
+
+    await this.database.landlords.put(newLandlord);
+
+    const pins = readLandlordPins();
+    pins[newLandlord.id] = pin;
+    writeLandlordPins(pins);
+
+    this.landlord = newLandlord;
+    this.authenticatedLandlordId = newLandlord.id;
+    writeStorageItem(
+      AUTH_SESSION_STORAGE_KEY,
+      JSON.stringify({ landlordId: newLandlord.id, loggedInAt: now })
+    );
+
+    return newLandlord;
+  }
+
+  logoutLandlord(): void {
+    this.authenticatedLandlordId = null;
+    removeStorageItem(AUTH_SESSION_STORAGE_KEY);
+  }
+
+  buildRoomSetupDrafts(params: {
+    totalFloors: number;
+    roomsPerFloor: number;
+    defaultAreaSqm: number;
+    defaultBasePrice: number;
+  }): RoomSetupDraft[] {
+    const totalFloors = Math.max(1, Math.min(6, Math.round(params.totalFloors)));
+    const roomsPerFloor = Math.max(1, Math.min(8, Math.round(params.roomsPerFloor)));
+    const areaSqm = Math.max(10, Math.min(150, params.defaultAreaSqm));
+    const basePrice = Math.max(0, Math.round(params.defaultBasePrice));
+
+    const existingByNumber = new Map(this.rooms.map((r) => [r.room_number, r]));
+    const drafts: RoomSetupDraft[] = [];
+
+    for (let floor = 1; floor <= totalFloors; floor += 1) {
+      for (let idx = 1; idx <= roomsPerFloor; idx += 1) {
+        const roomNumber = `P${floor}${String(idx).padStart(2, '0')}`;
+        const existing = existingByNumber.get(roomNumber);
+        drafts.push({
+          roomNumber,
+          floorNumber: floor,
+          areaSqm,
+          basePrice,
+          depositAmount: existing?.deposit_amount ?? basePrice,
+          status: existing?.status ?? 'EMPTY',
+        });
+      }
+    }
+
+    return drafts;
+  }
+
+  async registerOrUpdateBuilding(input: BuildingRegistrationInput): Promise<Property> {
+    const propertyName = input.propertyName.trim();
+    if (!propertyName) {
+      throw new Error('Tên tòa nhà không được để trống.');
+    }
+    if (input.totalFloors < 1 || input.totalFloors > 6) {
+      throw new Error('Số tầng phải nằm trong khoảng từ 1 đến 6.');
+    }
+    if (input.roomsPerFloor < 1 || input.roomsPerFloor > 8) {
+      throw new Error('Số phòng mỗi tầng phải nằm trong khoảng từ 1 đến 8.');
+    }
+    if (input.roomsDraft.length === 0) {
+      throw new Error('Danh sách phòng đăng ký không được để trống.');
+    }
+    for (const draft of input.roomsDraft) {
+      if (draft.areaSqm < 10 || draft.areaSqm > 150) {
+        throw new Error(`Diện tích phòng ${draft.roomNumber} phải từ 10 đến 150 m².`);
+      }
+    }
+
+    const now = new Date().toISOString();
+    const landlordId = this.landlord?.id ?? this.property?.landlord_id ?? SEED_LANDLORD_ID;
+    const propertyId = this.property?.id ?? generateUUID();
+
+    const updatedProperty: Property = {
+      id: propertyId,
+      landlord_id: landlordId,
+      name: propertyName,
+      address: input.address.trim() || 'Hà Nội',
+      total_floors: input.totalFloors,
+      coordinates_3d: this.property?.coordinates_3d ?? { x: 0, y: 0, z: 0 },
+      is_public_on_map: this.property?.is_public_on_map ?? true,
+      water_calc_method: input.waterCalcMethod,
+      water_unit_price: input.waterUnitPrice,
+      electric_unit_price: input.electricUnitPrice,
+      service_fee: input.serviceFee,
+      created_at: this.property?.created_at ?? now,
+      updated_at: now,
+    };
+
+    const existingByNumber = new Map(this.rooms.map((r) => [r.room_number, r]));
+    const nextRooms: Room[] = input.roomsDraft.map((draft) => {
+      const existing = existingByNumber.get(draft.roomNumber);
+      return {
+        id: existing?.id ?? generateUUID(),
+        landlord_id: landlordId,
+        property_id: propertyId,
+        floor_number: draft.floorNumber,
+        room_number: draft.roomNumber,
+        area_sqm: draft.areaSqm,
+        base_price: draft.basePrice,
+        deposit_amount: draft.depositAmount ?? existing?.deposit_amount ?? draft.basePrice,
+        status: draft.status ?? existing?.status ?? 'EMPTY',
+        created_at: existing?.created_at ?? now,
+        updated_at: now,
+      };
+    });
+
+    const nextRoomIds = new Set(nextRooms.map((r) => r.id));
+    const removedRoomIds = this.rooms
+      .filter((r) => r.property_id === propertyId && !nextRoomIds.has(r.id))
+      .map((r) => r.id);
+
+    await this.database.transaction(
+      'rw',
+      this.database.properties,
+      this.database.rooms,
+      async () => {
+        await this.database.properties.put(updatedProperty);
+        if (removedRoomIds.length > 0) {
+          await this.database.rooms.bulkDelete(removedRoomIds);
+        }
+        await this.database.rooms.bulkPut(nextRooms);
+      }
+    );
+
+    this.property = updatedProperty;
+    this.rooms = nextRooms.sort((a, b) => a.room_number.localeCompare(b.room_number));
+
+    const nextDevicesByRoomId: Record<string, RoomDeviceDTO[]> = {};
+    for (const room of this.rooms) {
+      nextDevicesByRoomId[room.id] =
+        this.devicesByRoomId[room.id] ?? buildStandardRoomDevices(room.id);
+    }
+    this.devicesByRoomId = nextDevicesByRoomId;
+
+    const totalAreaSqm = Math.round(this.rooms.reduce((sum, r) => sum + r.area_sqm, 0) * 10) / 10;
+    const anchorRoom = this.rooms[0];
+    if (anchorRoom) {
+      const auditLog = await recordRoomAuditLog(
+        {
+          landlord_id: landlordId,
+          room_id: anchorRoom.id,
+          actor_id: landlordId,
+          actor_role: 'LANDLORD',
+          action_type: 'IN_PLACE_EDIT',
+          change_summary: `Cập nhật cấu hình tòa nhà: ${input.totalFloors} tầng, ${this.rooms.length} phòng, tổng diện tích ${totalAreaSqm} m²`,
+          new_data: {
+            propertyName: updatedProperty.name,
+            totalFloors: input.totalFloors,
+            roomsPerFloor: input.roomsPerFloor,
+            totalRooms: this.rooms.length,
+            totalAreaSqm,
+          },
+        },
+        this.database
+      );
+      this.roomAuditLogs = [auditLog, ...this.roomAuditLogs];
+    }
+
+    const matchedPreset = BUILDING_BLOCK_PRESETS.find(
+      (p) =>
+        p.id !== 'CUSTOM' &&
+        p.floors === input.totalFloors &&
+        p.roomsPerFloor === input.roomsPerFloor
+    );
+    if (matchedPreset) {
+      this.currentBlockPresetId = matchedPreset.id;
+      this.currentBlockGrid = { cols: matchedPreset.cols, rows: matchedPreset.rows };
+    } else {
+      const cols = Math.ceil(input.roomsPerFloor / 2);
+      const rows = Math.max(1, Math.ceil(input.roomsPerFloor / cols));
+      this.currentBlockPresetId = 'CUSTOM';
+      this.currentBlockGrid = { cols, rows };
+    }
+    writeStorageItem(BUILDING_BLOCK_PRESET_STORAGE_KEY, this.currentBlockPresetId);
+
+    if (this.renderer) {
+      await this.syncAllToRenderer();
+    }
+
+    return updatedProperty;
+  }
+
+  async applyBuildingBlockPreset(
+    presetId: BuildingBlockPresetId | string,
+    customConfig?: { cols: number; rows: number; floors: number }
+  ): Promise<void> {
+    if (!this.property) {
+      throw new Error('Chưa khởi tạo dữ liệu tòa nhà.');
+    }
+
+    let cols: number;
+    let rows: number;
+    let floors: number;
+
+    if (presetId === 'CUSTOM') {
+      cols = Math.max(1, Math.min(8, customConfig?.cols ?? this.currentBlockGrid.cols));
+      rows = Math.max(1, Math.min(8, customConfig?.rows ?? this.currentBlockGrid.rows));
+      floors = Math.max(1, Math.min(6, customConfig?.floors ?? this.property.total_floors));
+    } else {
+      const preset = BUILDING_BLOCK_PRESETS.find((p) => p.id === presetId);
+      if (!preset) {
+        throw new Error(`Không tìm thấy cấu hình preset khối tòa nhà: ${presetId}`);
+      }
+      cols = preset.cols;
+      rows = preset.rows;
+      floors = preset.floors;
+    }
+
+    const roomsPerFloor = cols * rows;
+    const now = new Date().toISOString();
+    const landlordId = this.landlord?.id ?? this.property.landlord_id ?? SEED_LANDLORD_ID;
+    const propertyId = this.property.id;
+
+    const updatedProperty: Property = {
+      ...this.property,
+      total_floors: floors,
+      updated_at: now,
+    };
+
+    const existingByNumber = new Map(this.rooms.map((r) => [r.room_number, r]));
+    const targetRooms: Room[] = [];
+
+    for (let floor = 1; floor <= floors; floor += 1) {
+      for (let idx = 1; idx <= roomsPerFloor; idx += 1) {
+        const roomNumber = `P${floor}${String(idx).padStart(2, '0')}`;
+        const existing = existingByNumber.get(roomNumber);
+        if (existing) {
+          targetRooms.push({
+            ...existing,
+            floor_number: floor,
+            updated_at: now,
+          });
+        } else {
+          targetRooms.push({
+            id: generateUUID(),
+            landlord_id: landlordId,
+            property_id: propertyId,
+            floor_number: floor,
+            room_number: roomNumber,
+            area_sqm: 25,
+            base_price: 4000000,
+            deposit_amount: 4000000,
+            status: 'EMPTY',
+            created_at: now,
+            updated_at: now,
+          });
+        }
+      }
+    }
+
+    const targetRoomIds = new Set(targetRooms.map((r) => r.id));
+    const removedRoomIds = this.rooms
+      .filter((r) => !targetRoomIds.has(r.id))
+      .map((r) => r.id);
+
+    await this.database.transaction(
+      'rw',
+      this.database.properties,
+      this.database.rooms,
+      async () => {
+        await this.database.properties.put(updatedProperty);
+        if (removedRoomIds.length > 0) {
+          await this.database.rooms.bulkDelete(removedRoomIds);
+        }
+        await this.database.rooms.bulkPut(targetRooms);
+      }
+    );
+
+    this.property = updatedProperty;
+    this.rooms = targetRooms.sort((a, b) => a.room_number.localeCompare(b.room_number));
+    this.currentBlockPresetId = presetId as BuildingBlockPresetId;
+    this.currentBlockGrid = { cols, rows };
+    writeStorageItem(BUILDING_BLOCK_PRESET_STORAGE_KEY, presetId);
+
+    const nextDevicesByRoomId: Record<string, RoomDeviceDTO[]> = {};
+    for (const room of this.rooms) {
+      nextDevicesByRoomId[room.id] =
+        this.devicesByRoomId[room.id] ?? buildStandardRoomDevices(room.id);
+    }
+    this.devicesByRoomId = nextDevicesByRoomId;
+
+    if (this.activeFloorIndex >= floors) {
+      this.activeFloorIndex = Math.max(0, floors - 1);
+    }
+    const storeFloor = useLedgerStore.getState().currentFloor;
+    if (storeFloor > floors) {
+      useLedgerStore.getState().flipFloor(floors);
+    }
+
+    const totalAreaSqm = Math.round(this.rooms.reduce((sum, r) => sum + r.area_sqm, 0) * 10) / 10;
+    const anchorRoom = this.rooms[0];
+    if (anchorRoom) {
+      const auditLog = await recordRoomAuditLog(
+        {
+          landlord_id: landlordId,
+          room_id: anchorRoom.id,
+          actor_id: landlordId,
+          actor_role: 'LANDLORD',
+          action_type: 'IN_PLACE_EDIT',
+          change_summary: `Áp dụng khối toà nhà ${presetId}: ${cols}x${rows}x${floors} (${this.rooms.length} phòng, ${floors} tầng)`,
+          new_data: {
+            presetId,
+            cols,
+            rows,
+            floors,
+            roomsPerFloor,
+            totalRooms: this.rooms.length,
+            totalAreaSqm,
+          },
+        },
+        this.database
+      );
+      this.roomAuditLogs = [auditLog, ...this.roomAuditLogs];
+    }
+
+    if (this.renderer) {
+      await this.syncAllToRenderer();
     }
   }
 
@@ -330,10 +1136,12 @@ export class LedgerController {
     let pendingVerifyCount = 0;
     let brokenDeviceCount = 0;
     let vacantCount = 0;
+    let totalAreaRaw = 0;
 
     for (const room of this.rooms) {
       if (room.status === 'RENTED') occupiedCount += 1;
       if (room.status === 'EMPTY') vacantCount += 1;
+      totalAreaRaw += room.area_sqm;
 
       const notice = this.getRoomNoticeType(room.id);
       if (notice === 'PAYMENT_DUE') paymentDueCount += 1;
@@ -343,6 +1151,10 @@ export class LedgerController {
       if (hasBroken) brokenDeviceCount += 1;
     }
 
+    const totalAreaSqm = Math.round(totalAreaRaw * 10) / 10;
+    const averageAreaSqm =
+      this.rooms.length > 0 ? Math.round((totalAreaSqm / this.rooms.length) * 10) / 10 : 0;
+
     return {
       totalRooms: this.rooms.length,
       occupiedCount,
@@ -350,6 +1162,8 @@ export class LedgerController {
       pendingVerifyCount,
       brokenDeviceCount,
       vacantCount,
+      totalAreaSqm,
+      averageAreaSqm,
     };
   }
 
@@ -431,6 +1245,109 @@ export class LedgerController {
   async closeLedgerBookTo3DScene(): Promise<void> {
     useLedgerStore.getState().closeLedgerBook();
     await this.renderer?.closeLedgerBookTo3DScene();
+  }
+
+  // === 3D Floor Cutaway View & Navigation ===
+
+  getFloorCutawayRoomConfigs(floorIndex: number): FloorCutawayRoomConfig[] {
+    const floorNumber = floorIndex + 1;
+    const floorRooms = this.rooms
+      .filter((r) => r.floor_number === floorNumber)
+      .sort((a, b) => a.room_number.localeCompare(b.room_number));
+
+    return floorRooms.map((room, roomIndex) => {
+      const tenant = this.getRepresentativeTenant(room.id);
+      const billing = this.getLatestBillingForRoom(room.id);
+      const reading = this.getLatestReadingForRoom(room.id);
+      const noticeType = this.getRoomNoticeType(room.id);
+      const devices = (this.devicesByRoomId[room.id] ?? []).map((d) => ({ ...d }));
+      const hasBrokenDevice = devices.some((d) => d.isBroken);
+
+      return {
+        roomId: room.id,
+        roomNumber: room.room_number,
+        floorIndex,
+        floorNumber: room.floor_number,
+        roomIndex,
+        status: room.status,
+        areaSqm: room.area_sqm,
+        basePrice: room.base_price,
+        tenantName: tenant?.full_name,
+        noticeType,
+        hasPaymentNotice: noticeType !== 'NONE',
+        hasPaymentDue: noticeType === 'PAYMENT_DUE',
+        hasBrokenDevice,
+        devices,
+        currentTenant: tenant
+          ? {
+              tenantId: tenant.id,
+              fullName: tenant.full_name,
+              phone: tenant.phone ?? '',
+              hometown: tenant.hometown,
+              tempResidenceStatus: tenant.temp_residence_status,
+            }
+          : undefined,
+        latestBilling: billing
+          ? {
+              billingId: billing.id,
+              monthPeriod: billing.month_period,
+              roomCharge: billing.room_charge,
+              electricCharge: billing.electric_charge,
+              waterCharge: billing.water_charge,
+              serviceCharge: billing.service_charge,
+              totalAmount: billing.total_amount,
+              status: billing.status,
+              billImageUrl: billing.bill_image_url,
+            }
+          : undefined,
+        latestReading: reading
+          ? {
+              oldElectric: reading.old_electric,
+              newElectric: reading.new_electric,
+              oldWater: reading.old_water,
+              newWater: reading.new_water,
+            }
+          : undefined,
+      };
+    });
+  }
+
+  async selectFloor(floorIndex: number): Promise<void> {
+    const totalFloors = this.property?.total_floors ?? 3;
+    const clampedIndex = Math.max(0, Math.min(totalFloors - 1, floorIndex));
+    this.activeFloorIndex = clampedIndex;
+    this.viewMode = 'FLOOR_3D';
+
+    const configs = this.getFloorCutawayRoomConfigs(clampedIndex);
+
+    const r = this.renderer as {
+      transitionToFloor?: (floorIndex: number) => Promise<void>;
+      renderFloorCutaway?: (floorIndex: number, configs: FloorCutawayRoomConfig[]) => Promise<void>;
+    };
+
+    if (r?.transitionToFloor) {
+      await r.transitionToFloor(clampedIndex);
+    }
+    if (r?.renderFloorCutaway) {
+      await r.renderFloorCutaway(clampedIndex, configs);
+    }
+  }
+
+  async backToBuilding(): Promise<void> {
+    this.viewMode = 'BUILDING';
+    const r = this.renderer as {
+      transitionToBuilding?: () => Promise<void>;
+    };
+    if (r?.transitionToBuilding) {
+      await r.transitionToBuilding();
+    }
+  }
+
+  async openRoomDetailFromFloor(
+    roomId: string,
+    tab?: RoomDetailTab
+  ): Promise<void> {
+    await this.openRoomDetail(roomId, tab ?? 'PAGE_1_BILLING');
   }
 
   // === Preview State vs Commit State (Page 1 Billing) ===

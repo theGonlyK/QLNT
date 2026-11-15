@@ -2,22 +2,44 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   FloorMapDTO,
   IGameRenderer,
+  Landlord,
+  Property,
   RoomAuditLog,
   RoomDetailDTO,
   RoomDetailTab,
 } from '@qlnt/shared-types';
 import { useLedgerStore } from '@qlnt/domain-core';
 import {
+  BUILDING_BLOCK_PRESETS,
   LedgerController,
   type ApproveBillResult,
   type BillingPreviewState,
+  type BuildingBlockPreset,
+  type BuildingBlockPresetId,
+  type BuildingRegistrationInput,
+  type RegisterLandlordInput,
   type RoomQuickPickItem,
+  type RoomSetupDraft,
   type RoomSummarySnapshot,
+  type ViewMode,
 } from './ledgerController';
+
+export {
+  BUILDING_BLOCK_PRESETS,
+  type BuildingBlockPreset,
+  type BuildingBlockPresetId,
+};
 
 export interface RendererBridgeState {
   isReady: boolean;
   error: string | null;
+  isAuthenticated: boolean;
+  landlord: Landlord | null;
+  property: Property | null;
+  totalFloors: number;
+  roomsPerFloor: number;
+  viewMode: ViewMode;
+  activeFloorIndex: number;
   isBookOpen: boolean;
   currentMonth: string;
   currentFloor: number;
@@ -25,6 +47,8 @@ export interface RendererBridgeState {
   activeTab: RoomDetailTab;
   propertyName: string;
   propertyAddress: string;
+  currentBlockPresetId: BuildingBlockPresetId;
+  currentBlockGrid: { cols: number; rows: number };
   landlordReputation: number;
   summary: RoomSummarySnapshot;
   roomsWithNotices: RoomQuickPickItem[];
@@ -35,6 +59,24 @@ export interface RendererBridgeState {
   tenantRewardPoints: number;
   statusBanner: string | null;
   attachRenderer: (renderer: IGameRenderer | null) => void;
+  selectFloor: (floorIndex: number) => Promise<void>;
+  backToBuilding: () => Promise<void>;
+  openRoomDetailFromFloor: (roomId: string, tab?: RoomDetailTab) => Promise<void>;
+  loginLandlord: (phoneOrEmail: string, pin: string) => Promise<Landlord>;
+  loginDemoLandlord: () => Promise<Landlord>;
+  registerLandlord: (input: RegisterLandlordInput) => Promise<Landlord>;
+  logoutLandlord: () => void;
+  buildRoomSetupDrafts: (params: {
+    totalFloors: number;
+    roomsPerFloor: number;
+    defaultAreaSqm: number;
+    defaultBasePrice: number;
+  }) => RoomSetupDraft[];
+  registerOrUpdateBuilding: (input: BuildingRegistrationInput) => Promise<Property>;
+  applyBuildingBlockPreset: (
+    presetId: BuildingBlockPresetId | string,
+    customConfig?: { cols: number; rows: number; floors: number }
+  ) => Promise<void>;
   openBookForFloor: (floorNumber: number) => Promise<void>;
   flipFloor: (floorNumber: number) => Promise<void>;
   openRoomDetail: (roomId: string, tab?: RoomDetailTab) => Promise<void>;
@@ -98,6 +140,27 @@ export function useRendererBridge(externalController?: LedgerController): Render
       controller.attachRenderer(renderer);
     },
     [controller]
+  );
+
+  const selectFloor = useCallback(
+    async (floorIndex: number) => {
+      await controller.selectFloor(floorIndex);
+      bump();
+    },
+    [controller, bump]
+  );
+
+  const backToBuilding = useCallback(async () => {
+    await controller.backToBuilding();
+    bump();
+  }, [controller, bump]);
+
+  const openRoomDetailFromFloor = useCallback(
+    async (roomId: string, tab?: RoomDetailTab) => {
+      await controller.openRoomDetailFromFloor(roomId, tab);
+      bump();
+    },
+    [controller, bump]
   );
 
   const openBookForFloor = useCallback(
@@ -205,9 +268,86 @@ export function useRendererBridge(externalController?: LedgerController): Render
     setStatusBanner(null);
   }, []);
 
+  const loginLandlord = useCallback(
+    async (phoneOrEmail: string, pin: string) => {
+      const result = await controller.loginLandlord(phoneOrEmail, pin);
+      setStatusBanner(`Đã đăng nhập tài khoản Chủ trọ ${result.name}.`);
+      bump();
+      return result;
+    },
+    [controller, bump]
+  );
+
+  const loginDemoLandlord = useCallback(async () => {
+    const result = await controller.loginDemoLandlord();
+    setStatusBanner(`Đã đăng nhập nhanh Chủ trọ Demo: ${result.name}.`);
+    bump();
+    return result;
+  }, [controller, bump]);
+
+  const registerLandlord = useCallback(
+    async (input: RegisterLandlordInput) => {
+      const result = await controller.registerLandlord(input);
+      setStatusBanner(`Đã tạo tài khoản Chủ trọ ${result.name}.`);
+      bump();
+      return result;
+    },
+    [controller, bump]
+  );
+
+  const logoutLandlord = useCallback(() => {
+    controller.logoutLandlord();
+    setStatusBanner('Đã đăng xuất tài khoản Chủ trọ.');
+    bump();
+  }, [controller, bump]);
+
+  const buildRoomSetupDrafts = useCallback(
+    (params: {
+      totalFloors: number;
+      roomsPerFloor: number;
+      defaultAreaSqm: number;
+      defaultBasePrice: number;
+    }) => controller.buildRoomSetupDrafts(params),
+    [controller]
+  );
+
+  const registerOrUpdateBuilding = useCallback(
+    async (input: BuildingRegistrationInput) => {
+      const updated = await controller.registerOrUpdateBuilding(input);
+      const nextSummary = controller.getSummaryStats();
+      setStatusBanner(
+        `Đã lưu tòa nhà ${updated.name}: ${updated.total_floors} tầng, ${nextSummary.totalRooms} phòng (${nextSummary.totalAreaSqm} m²).`
+      );
+      bump();
+      return updated;
+    },
+    [controller, bump]
+  );
+
+  const applyBuildingBlockPreset = useCallback(
+    async (
+      presetId: BuildingBlockPresetId | string,
+      customConfig?: { cols: number; rows: number; floors: number }
+    ) => {
+      await controller.applyBuildingBlockPreset(presetId, customConfig);
+      const matched = BUILDING_BLOCK_PRESETS.find((p) => p.id === presetId);
+      const label = matched ? matched.label : presetId;
+      setStatusBanner(`Đã đổi khối toà nhà sang ${label}.`);
+      bump();
+    },
+    [controller, bump]
+  );
+
   const computed = useMemo(() => {
+    const isAuthenticated = controller.isAuthenticated();
     const property = controller.getProperty();
     const landlord = controller.getLandlord();
+    const totalFloors = property?.total_floors ?? 3;
+    const roomsPerFloor = controller.getRoomsPerFloor();
+    const currentBlockPresetId = controller.getCurrentBlockPresetId();
+    const currentBlockGrid = controller.getCurrentBlockGrid();
+    const viewMode = controller.getViewMode();
+    const activeFloorIndex = controller.getActiveFloorIndex();
     const summary = controller.getSummaryStats();
     const roomsWithNotices = controller.getRoomsWithNotices();
     const floorMap = controller.getFloorMapDTO(currentFloor);
@@ -217,6 +357,15 @@ export function useRendererBridge(externalController?: LedgerController): Render
     const tenantRewardPoints = selectedRoomId ? controller.getTenantRewardPoints(selectedRoomId) : 0;
 
     return {
+      isAuthenticated,
+      landlord,
+      property,
+      totalFloors,
+      roomsPerFloor,
+      currentBlockPresetId,
+      currentBlockGrid,
+      viewMode,
+      activeFloorIndex,
       propertyName: property?.name ?? 'Nhà trọ Hạnh Phúc',
       propertyAddress: property?.address ?? 'Ngõ 133 Xuân Thủy, Cầu Giấy, Hà Nội',
       landlordReputation: landlord?.reputation_stars ?? 4.8,
@@ -242,6 +391,16 @@ export function useRendererBridge(externalController?: LedgerController): Render
     ...computed,
     statusBanner,
     attachRenderer,
+    selectFloor,
+    backToBuilding,
+    openRoomDetailFromFloor,
+    loginLandlord,
+    loginDemoLandlord,
+    registerLandlord,
+    logoutLandlord,
+    buildRoomSetupDrafts,
+    registerOrUpdateBuilding,
+    applyBuildingBlockPreset,
     openBookForFloor,
     flipFloor,
     openRoomDetail,
