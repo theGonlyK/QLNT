@@ -557,13 +557,21 @@ describe('ThreeGameRenderer — 3D interaction, raycast, hover & camera controls
     expect(anchorBroken).toBeInstanceOf(THREE.Vector3);
 
     const mesh = r.findRoomMesh('room-1')!;
+    // room-1 is floor 0, room 0 -> rowIdx 0 < rows - 1 (1) -> back row (anchor on top)
     expect(anchorNotice.x).toBeCloseTo(mesh.position.x - 0.18, 4);
-    expect(anchorNotice.y).toBeCloseTo(mesh.position.y + 0.15, 4);
-    expect(anchorNotice.z).toBeCloseTo(mesh.position.z + 0.72, 4);
+    expect(anchorNotice.y).toBeCloseTo(mesh.position.y + 0.78, 4);
+    expect(anchorNotice.z).toBeCloseTo(mesh.position.z, 4);
 
     expect(anchorBroken.x).toBeCloseTo(mesh.position.x + 0.18, 4);
     expect(anchorSlot0.x).toBeCloseTo(anchorNotice.x, 4);
     expect(anchorSlot1.x).toBeCloseTo(anchorBroken.x, 4);
+
+    // Front-row room (room-3: floor 0, room 2 -> rowIdx 1 === rows - 1) anchors in front
+    const anchorFront = r.getRoomBadgeAnchor('room-3', 'ROOM_NOTICE');
+    const meshFront = r.findRoomMesh('room-3')!;
+    expect(anchorFront.x).toBeCloseTo(meshFront.position.x - 0.18, 4);
+    expect(anchorFront.y).toBeCloseTo(meshFront.position.y + 0.25, 4);
+    expect(anchorFront.z).toBeCloseTo(meshFront.position.z + 0.68, 4);
 
     // Missing room fallback
     const fallback = r.getRoomBadgeAnchor('unknown-room-id');
@@ -834,25 +842,30 @@ describe('ThreeGameRenderer — per-room NoticeBadge positioning, bindRoomIds & 
     expect(p101Badge!.position.x).not.toBeCloseTo(p204Badge!.position.x, 2);
     expect(p101Badge!.position.y).not.toBeCloseTo(p204Badge!.position.y, 2);
 
-    // Front face anchor (z > 0) so upper floors do not occlude lower floors
-    expect(p101Badge!.position.z).toBeGreaterThan(0);
-    expect(p204Badge!.position.z).toBeGreaterThan(0);
-
+    // Back-row room P101 stays on top at mesh.position.z
     expect(p101Badge!.position.x).toBeCloseTo(p101Mesh.position.x - 0.18, 4);
-    expect(p101Badge!.position.y).toBeCloseTo(p101Mesh.position.y + 0.15, 4);
-    expect(p101Badge!.position.z).toBeCloseTo(p101Mesh.position.z + 0.72, 4);
+    expect(p101Badge!.position.y).toBeCloseTo(p101Mesh.position.y + 0.78, 4);
+    expect(p101Badge!.position.z).toBeCloseTo(p101Mesh.position.z, 4);
 
+    // Front-row room P204 anchors in front
     expect(p204Badge!.position.x).toBeCloseTo(p204Mesh.position.x + 0.18, 4);
-    expect(p204Badge!.position.y).toBeCloseTo(p204Mesh.position.y + 0.15, 4);
-    expect(p204Badge!.position.z).toBeCloseTo(p204Mesh.position.z + 0.72, 4);
+    expect(p204Badge!.position.y).toBeCloseTo(p204Mesh.position.y + 0.25, 4);
+    expect(p204Badge!.position.z).toBeCloseTo(p204Mesh.position.z + 0.68, 4);
 
-    // Room material colors: P101 yellow tint (#d97706), P204 red (#ff4444), P104 unchanged
+    // Room material colors: P101 yellow tint (#f59e0b), P204 red (#ef4444), P104 unchanged
     const p104Mesh = r.findRoomMesh('uuid-p104')!;
-    expect((p101Mesh.material as THREE.MeshLambertMaterial).color.getHex()).toBe(0xd97706);
-    expect((p204Mesh.material as THREE.MeshLambertMaterial).color.getHex()).toBe(0xff4444);
+    expect((p101Mesh.material as THREE.MeshLambertMaterial).color.getHex()).toBe(0xf59e0b);
+    expect((p101Mesh.material as THREE.MeshLambertMaterial).emissive.getHex()).toBe(0x331a00);
+    expect(p101Mesh.receiveShadow).toBe(false);
+
+    expect((p204Mesh.material as THREE.MeshLambertMaterial).color.getHex()).toBe(0xef4444);
+    expect((p204Mesh.material as THREE.MeshLambertMaterial).emissive.getHex()).toBe(0x3b0707);
+    expect(p204Mesh.receiveShadow).toBe(false);
+
     expect((p104Mesh.material as THREE.MeshLambertMaterial).color.getHex()).toBe(
       p104Mesh.userData['baseColor'],
     );
+    expect(p104Mesh.receiveShadow).toBe(true);
 
     // Clearing notice restores P101 baseColor and removes badge
     r.setRoomNotice('uuid-p101', 'NONE');
@@ -860,6 +873,8 @@ describe('ThreeGameRenderer — per-room NoticeBadge positioning, bindRoomIds & 
     expect((p101Mesh.material as THREE.MeshLambertMaterial).color.getHex()).toBe(
       p101Mesh.userData['baseColor'],
     );
+    expect((p101Mesh.material as THREE.MeshLambertMaterial).emissive.getHex()).toBe(0x000000);
+    expect(p101Mesh.receiveShadow).toBe(true);
   });
 
   it('getProjectedRoomPositions returns distinct (x, y) pixel coordinates for every room', async () => {
@@ -882,5 +897,84 @@ describe('ThreeGameRenderer — per-room NoticeBadge positioning, bindRoomIds & 
     expect(p204!.roomId).toBe('uuid-p204');
     expect(p101!.x).not.toBeCloseTo(p204!.x, 1);
     expect(p101!.y).not.toBeCloseTo(p204!.y, 1);
+  });
+
+  it('configures alert room meshes with vibrant emissive and disables receiveShadow', async () => {
+    const r2 = new ThreeGameRenderer({ canvas: document.createElement('canvas'), width: 800, height: 600 });
+    await r2.renderBuilding({
+      propertyId: 'p-shadow-test',
+      totalFloors: 3,
+      roomsPerFloor: 4,
+      position: { x: 0, y: 0, z: 0 },
+    });
+    r2.bindRoomIds([{ roomId: 'room-broken', floorIndex: 1, roomIndex: 1 }]);
+    r2.setDeviceStatus('room-broken', 'd1', 'BROKEN');
+
+    const brokenMesh = (r2 as any).findRoomMesh('room-broken');
+    expect(brokenMesh).toBeDefined();
+    expect(brokenMesh.receiveShadow).toBe(false);
+    expect(brokenMesh.castShadow).toBe(true);
+    expect(brokenMesh.material.emissive.getHex()).toBe(0x3b0707);
+  });
+
+  it('anchors notice badges accurately to target room mesh without spilling into front rooms', async () => {
+    const r2 = new ThreeGameRenderer({ canvas: document.createElement('canvas'), width: 800, height: 600 });
+    await r2.renderBuilding({
+      propertyId: 'p-anchor-test',
+      totalFloors: 3,
+      roomsPerFloor: 4,
+      position: { x: 0, y: 0, z: 0 },
+      blockGrid: { cols: 2, rows: 2 },
+    } as any);
+
+    r2.bindRoomIds([
+      { roomId: 'room-back', floorIndex: 1, roomIndex: 0 }, // Row 0 (hàng sau)
+      { roomId: 'room-front', floorIndex: 1, roomIndex: 2 }, // Row 1 (hàng trước)
+    ]);
+
+    const backAnchor = r2.getRoomBadgeAnchor('room-back', 'ROOM_NOTICE');
+    const backMesh = (r2 as any).findRoomMesh('room-back');
+    // Anchor phòng hàng sau phải neo trên đỉnh/thân của chính nó, không vượt sang z của hàng trước
+    expect(Math.abs(backAnchor.z - backMesh.position.z)).toBeLessThan(0.3);
+
+    const frontAnchor = r2.getRoomBadgeAnchor('room-front', 'ROOM_NOTICE');
+    const frontMesh = (r2 as any).findRoomMesh('room-front');
+    // Anchor phòng hàng trước neo ra mặt trước
+    expect(frontAnchor.z).toBeGreaterThan(frontMesh.position.z);
+  });
+
+  it('repositions existing badges and updates mesh alert status when building layout is re-rendered', async () => {
+    const r2 = new ThreeGameRenderer({ canvas: document.createElement('canvas'), width: 800, height: 600 });
+    await r2.renderBuilding({
+      propertyId: 'p-reposition-test',
+      totalFloors: 2,
+      roomsPerFloor: 4,
+      position: { x: 0, y: 0, z: 0 },
+      blockGrid: { cols: 2, rows: 2 },
+    } as any);
+
+    r2.bindRoomIds([
+      { roomId: 'room-target', floorIndex: 0, roomIndex: 0 },
+    ]);
+    r2.setRoomNotice('room-target', 'PAYMENT_DUE');
+
+    const badgeBefore = r2.getNoticeBadge('room:room-target');
+    expect(badgeBefore).toBeDefined();
+
+    // Re-render building at a different position
+    await r2.renderBuilding({
+      propertyId: 'p-reposition-test',
+      totalFloors: 2,
+      roomsPerFloor: 4,
+      position: { x: 10, y: 5, z: 10 },
+      blockGrid: { cols: 2, rows: 2 },
+    } as any);
+    r2.bindRoomIds([
+      { roomId: 'room-target', floorIndex: 0, roomIndex: 0 },
+    ]);
+
+    const badgeAfter = r2.getNoticeBadge('room:room-target');
+    expect(badgeAfter).toBeDefined();
+    expect(badgeAfter!.position.x).toBeGreaterThan(8);
   });
 });

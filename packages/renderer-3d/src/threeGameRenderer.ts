@@ -254,6 +254,15 @@ export class ThreeGameRenderer implements IGameRenderer {
         this.buildingMeshMap.set(`${f}-${r}`, mesh);
       }
     }
+
+    // Refresh room mesh colors and reposition any active badges to the newly rendered layout
+    for (const mesh of this.buildingMeshes) {
+      const roomId = mesh.userData['roomId'];
+      if (roomId) {
+        this.updateRoomMeshColor(roomId);
+      }
+    }
+    this.updateBadgePositions();
   }
 
   spawnAvatar(
@@ -340,6 +349,10 @@ export class ThreeGameRenderer implements IGameRenderer {
         mesh.userData['roomNumber'] = mapping.roomNumber;
       }
     }
+    for (const mapping of mappings) {
+      this.updateRoomMeshColor(mapping.roomId);
+    }
+    this.updateBadgePositions();
   }
 
   findRoomMesh(roomId: string): THREE.Mesh | undefined {
@@ -357,14 +370,43 @@ export class ThreeGameRenderer implements IGameRenderer {
     const mesh = this.findRoomMesh(roomId);
     if (mesh) {
       const isDevice = kind === 'DEVICE_BROKEN' || kind === 1;
-      const xOffset = isDevice ? 0.18 : -0.18;
-      return new THREE.Vector3(
-        mesh.position.x + xOffset,
-        mesh.position.y + 0.15,
-        mesh.position.z + 0.72,
-      );
+      const rowIdx = (mesh.userData['rowIdx'] as number | undefined) ?? 0;
+      const rows = (mesh.userData['rows'] as number | undefined) ?? 1;
+
+      if (rowIdx === rows - 1) {
+        // Front row room: anchor in front of that room mesh
+        const x = mesh.position.x + (isDevice ? 0.18 : -0.18);
+        const y = mesh.position.y + 0.25;
+        const z = mesh.position.z + 0.5 + 0.18;
+        return new THREE.Vector3(x, y, z);
+      } else {
+        // Back or middle row room: anchor ON TOP of that room mesh
+        const x = mesh.position.x + (isDevice ? 0.18 : -0.18);
+        const y = mesh.position.y + 0.5 + 0.28;
+        const z = mesh.position.z;
+        return new THREE.Vector3(x, y, z);
+      }
     }
     return new THREE.Vector3(0, 2.2, 0);
+  }
+
+  private updateBadgePositions(): void {
+    for (const [key, badge] of this.badges.entries()) {
+      if (key.startsWith('device:')) {
+        const parts = key.split(':');
+        const roomId = parts.slice(1, -1).join(':');
+        if (this.findRoomMesh(roomId)) {
+          const anchor = this.getRoomBadgeAnchor(roomId, 'DEVICE_BROKEN');
+          badge.setAnchorPosition(anchor.x, anchor.y, anchor.z);
+        }
+      } else if (key.startsWith('room:')) {
+        const roomId = key.slice('room:'.length);
+        if (this.findRoomMesh(roomId)) {
+          const anchor = this.getRoomBadgeAnchor(roomId, 'ROOM_NOTICE');
+          badge.setAnchorPosition(anchor.x, anchor.y, anchor.z);
+        }
+      }
+    }
   }
 
   private hasBrokenDeviceForRoom(roomId: string): boolean {
@@ -421,18 +463,31 @@ export class ThreeGameRenderer implements IGameRenderer {
       .forEach((c) => {
         if (
           c instanceof THREE.Mesh &&
-          c.material instanceof THREE.MeshLambertMaterial
+          (c.material instanceof THREE.MeshLambertMaterial ||
+            c.material instanceof THREE.MeshStandardMaterial)
         ) {
           const baseColor =
             typeof c.userData['baseColor'] === 'number'
               ? c.userData['baseColor']
               : 0x4a90d9;
           if (isBroken) {
-            c.material.color.set(0xff4444);
+            c.material.color.set(0xef4444);
+            c.material.emissive.setHex(0x3b0707);
+            c.material.emissiveIntensity = 1;
+            c.receiveShadow = false;
+            c.castShadow = true;
           } else if (hasNotice) {
-            c.material.color.set(0xd97706);
+            c.material.color.set(0xf59e0b);
+            c.material.emissive.setHex(0x331a00);
+            c.material.emissiveIntensity = 1;
+            c.receiveShadow = false;
+            c.castShadow = true;
           } else {
             c.material.color.set(baseColor);
+            c.material.emissive.setHex(0x000000);
+            c.material.emissiveIntensity = 1;
+            c.receiveShadow = true;
+            c.castShadow = true;
           }
         }
       });
@@ -656,8 +711,13 @@ export class ThreeGameRenderer implements IGameRenderer {
     if (this.hoveredRoomKey !== null) {
       const prevMesh = this.buildingMeshMap.get(this.hoveredRoomKey);
       if (prevMesh && prevMesh.material instanceof THREE.MeshLambertMaterial) {
-        prevMesh.material.emissive.setHex(0x000000);
-        prevMesh.material.emissiveIntensity = 1;
+        const roomId = prevMesh.userData['roomId'];
+        if (roomId && (this.hasBrokenDeviceForRoom(roomId) || this.hasRoomNoticeForRoom(roomId))) {
+          this.updateRoomMeshColor(roomId);
+        } else {
+          prevMesh.material.emissive.setHex(0x000000);
+          prevMesh.material.emissiveIntensity = 1;
+        }
       }
       this.hoveredRoomKey = null;
     }
@@ -691,8 +751,13 @@ export class ThreeGameRenderer implements IGameRenderer {
           mesh.material.emissive.setHex(0xfbbf24);
           mesh.material.emissiveIntensity = 0.5;
         } else {
-          mesh.material.emissive.setHex(0x000000);
-          mesh.material.emissiveIntensity = 0;
+          const roomId = mesh.userData['roomId'];
+          if (roomId && (this.hasBrokenDeviceForRoom(roomId) || this.hasRoomNoticeForRoom(roomId))) {
+            this.updateRoomMeshColor(roomId);
+          } else {
+            mesh.material.emissive.setHex(0x000000);
+            mesh.material.emissiveIntensity = 0;
+          }
         }
       }
     }
