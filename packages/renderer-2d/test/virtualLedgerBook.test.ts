@@ -175,4 +175,56 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     });
     expect(detailBook.props['data-mode']).toBe('room-detail');
   });
+
+  it('renders 3D book cover and applies opening/closing animation classes', () => {
+    // 1. Default animationState should be 'open'
+    const defaultBook = VirtualLedgerBook({
+      floorMap: mockFloorMap,
+    });
+    expect(defaultBook.props['data-animation-state']).toBe('open');
+    expect(defaultBook.props.style?.perspective).toBe('1400px');
+    expect(defaultBook.props.style?.transformStyle).toBe('preserve-3d');
+    expect(defaultBook.props.className).toContain('book-state-open');
+
+    // 2. opening state
+    const openingBook = VirtualLedgerBook({
+      floorMap: mockFloorMap,
+      animationState: 'opening',
+    });
+    expect(openingBook.props['data-animation-state']).toBe('opening');
+    expect(openingBook.props.className).toContain('book-state-opening');
+
+    // 3. closing state
+    const closingBook = VirtualLedgerBook({
+      floorMap: mockFloorMap,
+      animationState: 'closing',
+    });
+    expect(closingBook.props['data-animation-state']).toBe('closing');
+    expect(closingBook.props.className).toContain('book-state-closing');
+
+    // 4. Verify book spine crease and 3D cover structure in children
+    const findNodeByTestId = (node: any, testId: string): any => {
+      if (!node) return null;
+      if (node.props && node.props['data-testid'] === testId) return node;
+      if (node.props && node.props.children) {
+        const children = Array.isArray(node.props.children)
+          ? node.props.children
+          : [node.props.children];
+        for (const child of children) {
+          const found = findNodeByTestId(child, testId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const spineCrease = findNodeByTestId(defaultBook, 'book-spine-crease');
+    expect(spineCrease).toBeDefined();
+    expect(spineCrease).not.toBeNull();
+    expect(spineCrease.props.className).toContain('book-spine-crease');
+
+    const bookCover = findNodeByTestId(defaultBook, 'book-cover-3d');
+    expect(bookCover).toBeDefined();
+    expect(bookCover).not.toBeNull();
+  });
 });
