@@ -781,24 +781,9 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
       const noticeValid = noticeMeshes.every((m: any) => m.receiveShadow === false && m.material?.emissive?.getHex() > 0);
       const normalValid = normalMeshes.every((m: any) => m.receiveShadow === true && m.material?.emissive?.getHex() === 0);
 
-      // Verify badges positioning on target meshes
-      const badges = Array.from((r.badges as Map<string, any>).entries()).map(([key, badge]: [string, any]) => {
-        const isDevice = key.startsWith('device:');
-        const roomId = isDevice ? key.split(':').slice(1, -1).join(':') : key.slice('room:'.length);
-        const mesh = meshes.find((m: any) => m.userData?.roomId === roomId || m.userData?.legacyRoomId === roomId);
-        const rowIdx = (mesh?.userData?.rowIdx as number | undefined) ?? 0;
-        const rows = (mesh?.userData?.rows as number | undefined) ?? 1;
-        const isFrontRow = rowIdx === rows - 1;
-        return {
-          key,
-          hasMesh: !!mesh,
-          isFrontRow,
-          badgeY: badge.position.y,
-          meshY: mesh?.position.y ?? 0,
-          badgeZ: badge.position.z,
-          meshZ: mesh?.position.z ?? 0,
-        };
-      });
+      // Verify exterior building scene has NO floating NoticeBadge objects
+      const sceneExteriorBadges = ((r.scene?.children as any[]) || []).filter((c: any) => c.name?.startsWith('NoticeBadge_'));
+      const badgesMapSize = (r.badges as Map<string, any>)?.size ?? 0;
 
       return {
         meshCount: r.buildingMeshes?.length,
@@ -808,7 +793,8 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
         noticeCount: noticeMeshes.length,
         noticeValid,
         normalValid,
-        badges,
+        exteriorBadgeCount: sceneExteriorBadges.length,
+        badgesMapSize,
       };
     });
     expect(tower3dState).not.toBeNull();
@@ -819,18 +805,8 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     expect(tower3dState!.noticeCount).toBeGreaterThan(0);
     expect(tower3dState!.noticeValid).toBe(true);
     expect(tower3dState!.normalValid).toBe(true);
-    for (const b of tower3dState!.badges) {
-      if (b.hasMesh) {
-        if (b.isFrontRow) {
-          // Front-row: anchor in front of room mesh
-          expect(b.badgeZ).toBeGreaterThan(b.meshZ + 0.4);
-        } else {
-          // Back-row: anchor on top of room mesh, not spilling into front row
-          expect(Math.abs(b.badgeZ - b.meshZ)).toBeLessThan(0.2);
-          expect(b.badgeY).toBeGreaterThan(b.meshY + 0.5);
-        }
-      }
-    }
+    expect(tower3dState!.exteriorBadgeCount).toBe(0);
+    expect(tower3dState!.badgesMapSize).toBe(0);
 
     // Capture screenshot: 10-building-block-preset-tower-2x2x6.png
     await page.screenshot({
@@ -889,24 +865,9 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
       const noticeValid = noticeMeshes.every((m: any) => m.receiveShadow === false && m.material?.emissive?.getHex() > 0);
       const normalValid = normalMeshes.every((m: any) => m.receiveShadow === true && m.material?.emissive?.getHex() === 0);
 
-      // Verify badges positioning on target meshes
-      const badges = Array.from((r.badges as Map<string, any>).entries()).map(([key, badge]: [string, any]) => {
-        const isDevice = key.startsWith('device:');
-        const roomId = isDevice ? key.split(':').slice(1, -1).join(':') : key.slice('room:'.length);
-        const mesh = meshes.find((m: any) => m.userData?.roomId === roomId || m.userData?.legacyRoomId === roomId);
-        const rowIdx = (mesh?.userData?.rowIdx as number | undefined) ?? 0;
-        const rows = (mesh?.userData?.rows as number | undefined) ?? 1;
-        const isFrontRow = rowIdx === rows - 1;
-        return {
-          key,
-          hasMesh: !!mesh,
-          isFrontRow,
-          badgeY: badge.position.y,
-          meshY: mesh?.position.y ?? 0,
-          badgeZ: badge.position.z,
-          meshZ: mesh?.position.z ?? 0,
-        };
-      });
+      // Verify exterior building scene has NO floating NoticeBadge objects in 3x3x3 layout
+      const sceneExteriorBadges = ((r.scene?.children as any[]) || []).filter((c: any) => c.name?.startsWith('NoticeBadge_'));
+      const badgesMapSize = (r.badges as Map<string, any>)?.size ?? 0;
 
       return {
         meshCount: r.buildingMeshes?.length,
@@ -916,7 +877,8 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
         noticeCount: noticeMeshes.length,
         noticeValid,
         normalValid,
-        badges,
+        exteriorBadgeCount: sceneExteriorBadges.length,
+        badgesMapSize,
       };
     });
     expect(cube3dState).not.toBeNull();
@@ -927,16 +889,8 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     expect(cube3dState!.noticeCount).toBeGreaterThan(0);
     expect(cube3dState!.noticeValid).toBe(true);
     expect(cube3dState!.normalValid).toBe(true);
-    for (const b of cube3dState!.badges) {
-      if (b.hasMesh) {
-        if (b.isFrontRow) {
-          expect(b.badgeZ).toBeGreaterThan(b.meshZ + 0.4);
-        } else {
-          expect(Math.abs(b.badgeZ - b.meshZ)).toBeLessThan(0.2);
-          expect(b.badgeY).toBeGreaterThan(b.meshY + 0.5);
-        }
-      }
-    }
+    expect(cube3dState!.exteriorBadgeCount).toBe(0);
+    expect(cube3dState!.badgesMapSize).toBe(0);
 
     // Capture screenshot: 11-building-block-preset-cube-3x3x3.png
     await page.screenshot({
@@ -971,6 +925,23 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     expect(cameraState!.zoom).toBeCloseTo(1.215, 2);
     expect(cameraState!.yawDeg).toBeCloseTo(45, 0.5);
     expect(cameraState!.pitchDeg).toBeCloseTo(35.264, 0.5);
+
+    // Verify Cutaway Floor 2 retains notice badges on room doors while exterior building has 0 badges
+    const cutawayState = await page.evaluate(() => {
+      const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
+      if (!r) return null;
+      const cutaway = r.getFloorCutawayRenderer?.();
+      if (!cutaway) return null;
+      const badges = cutaway.getBadges?.()?.filter((b: any) => b.userData?.type === 'cutaway_notice_badge') || [];
+      const exteriorBadges = ((r.scene?.children as any[]) || []).filter((c: any) => c.name?.startsWith('NoticeBadge_'));
+      return {
+        cutawayBadgeCount: badges.length,
+        exteriorBadgeCount: exteriorBadges.length,
+      };
+    });
+    expect(cutawayState).not.toBeNull();
+    expect(cutawayState!.cutawayBadgeCount).toBeGreaterThan(0);
+    expect(cutawayState!.exteriorBadgeCount).toBe(0);
 
     // Return to BUILDING mode
     await page.getByTestId('btn-back-to-building').click();
