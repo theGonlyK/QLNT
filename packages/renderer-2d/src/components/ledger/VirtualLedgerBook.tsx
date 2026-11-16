@@ -203,7 +203,6 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
     const base: React.CSSProperties = {
       transformOrigin: 'left center',
       transformStyle: 'preserve-3d',
-      backfaceVisibility: 'hidden',
       pointerEvents: 'none',
     };
 
@@ -393,7 +392,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
             transform: perspective(1600px) rotateY(0deg);
             opacity: 1;
           }
-          75% {
+          88% {
             opacity: 1;
           }
           100% {
@@ -406,7 +405,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
             transform: perspective(1600px) rotateY(0deg);
             opacity: 1;
           }
-          75% {
+          88% {
             opacity: 1;
           }
           100% {
@@ -419,7 +418,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
             transform: perspective(1600px) rotateY(0deg);
             opacity: 1;
           }
-          75% {
+          88% {
             opacity: 1;
           }
           100% {
@@ -519,7 +518,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
         {/* Tờ 1: Trang Mục Lục (Contents) với 6 ô vuông màu sắc như video mẫu */}
         <div
           data-testid="book-flip-sheet-1"
-          className="book-flip-sheet-1 pointer-events-none absolute inset-1 rounded-lg bg-[#FAF7EE] border border-amber-900/20 shadow-xl p-6 flex flex-col justify-between"
+          className="book-flip-sheet-1 pointer-events-none absolute top-12 bottom-2 left-1/2 right-2 rounded-r-lg bg-[#FAF7EE] border border-amber-900/20 shadow-xl p-5 flex flex-col justify-between"
           style={{ ...getFlipSheetStyle(1), zIndex: 33 }}
         >
           <div>
@@ -552,7 +551,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
         {/* Tờ 2: Trang Tổng Quan Mặt Bằng Tầng */}
         <div
           data-testid="book-flip-sheet-2"
-          className="book-flip-sheet-2 pointer-events-none absolute inset-1 rounded-lg bg-[#F8F5EC] border border-amber-900/20 shadow-xl p-6 flex flex-col justify-between"
+          className="book-flip-sheet-2 pointer-events-none absolute top-12 bottom-2 left-1/2 right-2 rounded-r-lg bg-[#F8F5EC] border border-amber-900/20 shadow-xl p-5 flex flex-col justify-between"
           style={{ ...getFlipSheetStyle(2), zIndex: 32 }}
         >
           <div>
@@ -580,7 +579,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
         {/* Tờ 3: Trang Chuyển Tiếp Hồ Sơ Phòng */}
         <div
           data-testid="book-flip-sheet-3"
-          className="book-flip-sheet-3 pointer-events-none absolute inset-1 rounded-lg bg-[#F7F4E9] border border-amber-900/20 shadow-xl p-6 flex flex-col justify-between"
+          className="book-flip-sheet-3 pointer-events-none absolute top-12 bottom-2 left-1/2 right-2 rounded-r-lg bg-[#F7F4E9] border border-amber-900/20 shadow-xl p-5 flex flex-col justify-between"
           style={{ ...getFlipSheetStyle(3), zIndex: 31 }}
         >
           <div>
