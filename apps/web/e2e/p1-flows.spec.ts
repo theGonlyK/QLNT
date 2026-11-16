@@ -1088,7 +1088,7 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0, { timeout: 3000 });
 
     // 6. Test 2-Stage Sequential Transition with Active Room Detail (Click room P101 from Drawer):
-    // Stage 1 (0ms - 550ms): Book opening, information panel completely hidden
+    // Stage 1 (0ms - 1400ms): Book opening & slow page flip, information panel completely hidden
     const cardP101 = page.getByTestId('stage-room-card-P101');
     await expect(cardP101).toBeVisible();
     await cardP101.click();
@@ -1096,19 +1096,19 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     // Verify overlay mounted in OPENING state with contentStage hidden
     await expect(overlayHost).toBeVisible();
 
-    // Check Stage 1 at t=200ms-250ms: Sách đang mở, panel thông tin đang ẩn
-    await page.waitForTimeout(220);
+    // Check Stage 1 at t=550ms: Sách đang mở và lật từng trang chậm rãi, panel thông tin đang ẩn
+    await page.waitForTimeout(550);
 
-    // Capture screenshot: 18-3d-book-flipping-pages-sequence.png (Lật từng trang sách nối tiếp ngay tại t≈220ms)
-    const seq18Path = path.join(SCREENSHOT_DIR, '18-3d-book-flipping-pages-sequence.png');
+    // Capture screenshot: 20-3d-book-slow-page-flip-midway.png (Lật từng trang sách chậm rãi tại t≈550ms)
+    const seq20Path = path.join(SCREENSHOT_DIR, '20-3d-book-slow-page-flip-midway.png');
     await page.screenshot({
-      path: seq18Path,
+      path: seq20Path,
       fullPage: true,
     });
-    copyScreenshotArtifacts('18-3d-book-flipping-pages-sequence.png');
+    copyScreenshotArtifacts('20-3d-book-slow-page-flip-midway.png');
     const coordinatorBrainDir = '/Users/minhntv/.gemini/antigravity-cli/brain/b01f57a0-4d41-4d53-9533-2dd802b0fa85';
     if (fs.existsSync(coordinatorBrainDir)) {
-      fs.copyFileSync(seq18Path, path.join(coordinatorBrainDir, '18-3d-book-flipping-pages-sequence.png'));
+      fs.copyFileSync(seq20Path, path.join(coordinatorBrainDir, '20-3d-book-slow-page-flip-midway.png'));
     }
 
     await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPENING');
@@ -1145,9 +1145,9 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     });
     copyScreenshotArtifacts('14-3d-book-stage1-opening.png');
 
-    // 7. Stage 2 (after 850ms - 1050ms): Book fully open, information panel pops up & revealed
-    await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPEN', { timeout: 3000 });
-    await expect(overlayHost).toHaveAttribute('data-content-stage', 'visible', { timeout: 3000 });
+    // 7. Stage 2 (after 1400ms - 2100ms): Book fully open, information panel pops up & revealed
+    await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPEN', { timeout: 4500 });
+    await expect(overlayHost).toHaveAttribute('data-content-stage', 'visible', { timeout: 4500 });
     await expect(virtualBook).toHaveAttribute('data-animation-state', 'open');
     await expect(virtualBook).toHaveAttribute('data-content-stage', 'visible');
     await expect(panel).toHaveAttribute('data-content-stage', 'visible');
@@ -1189,6 +1189,17 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     });
     expect(standupStyle.transformStyle).toBe('preserve-3d');
 
+    // Verify virtualBook is straight/flat (0deg) and NOT crooked
+    const bookTransform = await virtualBook.evaluate((el) => {
+      const computed = window.getComputedStyle(el);
+      return {
+        inlineTransform: el.style.transform,
+        computedTransform: computed.transform,
+      };
+    });
+    expect(bookTransform.inlineTransform).toBe('rotateX(0deg) rotateY(0deg)');
+    expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(bookTransform.computedTransform);
+
     // Capture screenshot: 15-3d-book-stage2-popup-revealed.png
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, '15-3d-book-stage2-popup-revealed.png'),
@@ -1203,15 +1214,15 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     });
     copyScreenshotArtifacts('17-3d-popup-book-upright-standup.png');
 
-    // Capture screenshot: 19-3d-book-room-info-page-revealed.png (Trang thông tin phòng được mở ra sau khi lật trang)
-    const seq19Path = path.join(SCREENSHOT_DIR, '19-3d-book-room-info-page-revealed.png');
+    // Capture screenshot: 21-3d-book-opened-straight-aligned-room-info.png (Cuốn sách mở thẳng vuông vắn hiển thị trang thông tin phòng)
+    const seq21Path = path.join(SCREENSHOT_DIR, '21-3d-book-opened-straight-aligned-room-info.png');
     await page.screenshot({
-      path: seq19Path,
+      path: seq21Path,
       fullPage: true,
     });
-    copyScreenshotArtifacts('19-3d-book-room-info-page-revealed.png');
+    copyScreenshotArtifacts('21-3d-book-opened-straight-aligned-room-info.png');
     if (fs.existsSync(coordinatorBrainDir)) {
-      fs.copyFileSync(seq19Path, path.join(coordinatorBrainDir, '19-3d-book-room-info-page-revealed.png'));
+      fs.copyFileSync(seq21Path, path.join(coordinatorBrainDir, '21-3d-book-opened-straight-aligned-room-info.png'));
     }
 
     // 8. Test 2-Stage Reverse Closing: panel collapses first -> book closes -> overlay unmounts
