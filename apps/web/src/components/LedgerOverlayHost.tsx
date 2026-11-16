@@ -144,6 +144,12 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
   const openTimer2Ref = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const stagedCloseRef = React.useRef<{ clear: () => void } | null>(null);
   const hasMountedRef = React.useRef(false);
+  const [isPageTurning, setIsPageTurning] = useState(false);
+  const pageTurnTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevPageRef = React.useRef<{ roomId?: string; floor: number }>({
+    roomId: roomDetail?.roomId,
+    floor: currentFloor,
+  });
 
   useEffect(() => {
     onAnimationStateChange?.(animationState);
@@ -185,9 +191,45 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
   }, [isBookOpen]);
 
   useEffect(() => {
+    const prev = prevPageRef.current;
+    const hasPageChanged =
+      prev.roomId !== roomDetail?.roomId || prev.floor !== currentFloor;
+    prevPageRef.current = {
+      roomId: roomDetail?.roomId,
+      floor: currentFloor,
+    };
+
+    if (animationState !== 'OPEN') {
+      setIsPageTurning(false);
+      return;
+    }
+
+    if (!hasPageChanged) {
+      return;
+    }
+
+    setIsPageTurning(true);
+    if (pageTurnTimerRef.current) {
+      clearTimeout(pageTurnTimerRef.current);
+    }
+    pageTurnTimerRef.current = setTimeout(() => {
+      setIsPageTurning(false);
+    }, 420);
+
+    return () => {
+      if (pageTurnTimerRef.current) {
+        clearTimeout(pageTurnTimerRef.current);
+      }
+    };
+  }, [roomDetail?.roomId, currentFloor, animationState]);
+
+  useEffect(() => {
     return () => {
       if (stagedCloseRef.current) {
         stagedCloseRef.current.clear();
+      }
+      if (pageTurnTimerRef.current) {
+        clearTimeout(pageTurnTimerRef.current);
       }
     };
   }, []);
@@ -461,6 +503,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
           <VirtualLedgerBook
             animationState={bookAnimState}
             contentStage={contentStage}
+            isPageTurning={isPageTurning}
             floorMap={floorMap}
             totalFloors={totalFloors}
             activeFloor={currentFloor}

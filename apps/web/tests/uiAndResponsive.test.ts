@@ -992,6 +992,13 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
     expect(hiddenHtml).toContain('data-testid="ledger-overlay-host"');
     expect(hiddenHtml).toContain('data-animation-state="OPENING"');
     expect(hiddenHtml).toContain('data-content-stage="hidden"');
+    expect(hiddenHtml).toContain('data-testid="book-flip-pages-stack"');
+    expect(hiddenHtml).toContain('data-testid="book-flip-sheet-1"');
+    expect(hiddenHtml).toContain('data-testid="book-flip-sheet-2"');
+    expect(hiddenHtml).toContain('data-testid="book-flip-sheet-3"');
+    expect(hiddenHtml).toContain('data-testid="contents-color-squares"');
+    expect(hiddenHtml).toContain('data-testid="book-page-block-edges"');
+    expect(hiddenHtml).toContain('data-testid="book-ribbon-bookmark"');
     expect(hiddenHtml).toContain('data-testid="f04-interactive-panel"');
     expect(hiddenHtml).toMatch(/data-testid="f04-interactive-panel"[^>]*data-content-stage="hidden"/);
     expect(hiddenHtml).toContain('opacity:0');
