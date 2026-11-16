@@ -197,7 +197,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
       style={{
         perspective: '1600px',
         transformStyle: 'preserve-3d',
-        transformOrigin: 'left center',
+        transformOrigin: 'left top',
         transform:
           animationState === 'open'
             ? 'rotateX(16deg) rotateY(-2deg)'

@@ -457,7 +457,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
         }}
       >
         {/* Core 2D Virtual Ledger Book (@qlnt/renderer-2d) */}
-        <div className="min-h-[420px]">
+        <div className="min-h-[420px]" style={{ transformStyle: 'preserve-3d' }}>
           <VirtualLedgerBook
             animationState={bookAnimState}
             contentStage={contentStage}

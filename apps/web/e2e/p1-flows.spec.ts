@@ -968,7 +968,7 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     expect(externalRequests).toEqual([]);
   });
 
-  test('TC-P1-14-3D-BOOK-POPUP-TRANSITION: Mo So Quan Ly F04 -> Hoat Anh 3D Pop-up Book Open (Perspective, Ban Le & Gay So 3D) -> Chuyen Canh 2 Giai Doan Tuan Tu (Sach Mo Truoc -> Cua So Thong Tin Bung No Sau) -> Gap So (3D) Smooth Folding Unmount', async ({
+  test('TC-P1-14-3D-BOOK-POPUP-TRANSITION: Mo So Quan Ly F04 -> Sach 3D Mo Doi Two-Page Spread -> The Pop-up Dung Dung Vuong Goc (popUpStandUp) & Bong Do -> Gap So (3D) Smooth Folding Unmount', async ({
     page,
   }) => {
     const consoleErrors: string[] = [];
@@ -1041,7 +1041,7 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
         transformOrigin: computed.transformOrigin || el.style.transformOrigin,
       };
     });
-    expect(perspectiveStyle.perspective).toMatch(/1400px/);
+    expect(perspectiveStyle.perspective).toMatch(/1600px/);
     expect(perspectiveStyle.transformStyle).toBe('preserve-3d');
 
     // Verify full ledger book content: Floor Header, Floor tabs, and Floor Map
@@ -1050,12 +1050,34 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     await expect(page.getByTestId('floor-tab-2')).toBeVisible();
     await expect(page.getByTestId('floor-tab-3')).toBeVisible();
 
+    // Verify Two-Page Spread 3D Book structure
+    const pageLeft = page.getByTestId('book-page-left');
+    const pageRight = page.getByTestId('book-page-right');
+    const spineCrease = page.getByTestId('book-spine-crease');
+    const standupCard = page.getByTestId('popup-standup-card');
+    const shadowGround = page.getByTestId('popup-shadow-ground');
+
+    await expect(pageLeft).toBeVisible();
+    await expect(pageRight).toBeVisible();
+    await expect(spineCrease).toBeVisible();
+    await expect(standupCard).toBeVisible();
+    await expect(shadowGround).toBeVisible();
+    await expect(standupCard).toHaveAttribute('data-content-stage', 'visible');
+    await expect(shadowGround).toHaveAttribute('data-content-stage', 'visible');
+
     // Capture screenshot: 13-3d-book-opened-full-ledger.png
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, '13-3d-book-opened-full-ledger.png'),
       fullPage: true,
     });
     copyScreenshotArtifacts('13-3d-book-opened-full-ledger.png');
+
+    // Capture screenshot: 16-3d-popup-book-isometric-spread.png: Toàn cảnh cuốn sách 3D mở đôi nghiêng trên bàn
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '16-3d-popup-book-isometric-spread.png'),
+      fullPage: true,
+    });
+    copyScreenshotArtifacts('16-3d-popup-book-isometric-spread.png');
 
     // 5. Test Gập Sổ (3D) folding transition and smooth unmount
     const closeBookBtn = page.getByTestId('close-ledger-book-btn');
@@ -1103,7 +1125,7 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     });
     copyScreenshotArtifacts('14-3d-book-stage1-opening.png');
 
-    // 7. Stage 2 (after 850ms - 950ms): Book fully open, information panel pops up & revealed
+    // 7. Stage 2 (after 850ms - 1050ms): Book fully open, information panel pops up & revealed
     await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPEN', { timeout: 3000 });
     await expect(overlayHost).toHaveAttribute('data-content-stage', 'visible', { timeout: 3000 });
     await expect(virtualBook).toHaveAttribute('data-animation-state', 'open');
@@ -1125,12 +1147,41 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     await expect(page.getByTestId('f04-page-1-controls')).toBeVisible();
     await expect(page.getByTestId('room-detail-single-page')).toContainText('P101');
 
-    // Capture screenshot: 15-3d-book-stage2-popup-revealed.png (Full 3D book open with interactive panel pop-up)
+    // Verify Two-Page Spread with Active Room P101 & Upright Pop-up Standup Card
+    await expect(pageLeft).toBeVisible();
+    await expect(pageLeft).toContainText('P101');
+    await expect(pageLeft).toContainText('Hồ sơ khách thuê đại diện');
+    await expect(pageLeft).toContainText('Chỉ số công tơ điện nước');
+
+    await expect(pageRight).toBeVisible();
+    await expect(standupCard).toBeVisible();
+    await expect(shadowGround).toBeVisible();
+    await expect(standupCard).toHaveAttribute('data-content-stage', 'visible');
+    await expect(shadowGround).toHaveAttribute('data-content-stage', 'visible');
+
+    // Verify standup card 3D transform properties
+    const standupStyle = await standupCard.evaluate((el) => {
+      const computed = window.getComputedStyle(el);
+      return {
+        transformStyle: computed.transformStyle || el.style.transformStyle,
+        transformOrigin: computed.transformOrigin || el.style.transformOrigin,
+      };
+    });
+    expect(standupStyle.transformStyle).toBe('preserve-3d');
+
+    // Capture screenshot: 15-3d-book-stage2-popup-revealed.png
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, '15-3d-book-stage2-popup-revealed.png'),
       fullPage: true,
     });
     copyScreenshotArtifacts('15-3d-book-stage2-popup-revealed.png');
+
+    // Capture screenshot: 17-3d-popup-book-upright-standup.png: Thẻ pop-up thông tin dựng đứng vuông góc kèm bóng đổ
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '17-3d-popup-book-upright-standup.png'),
+      fullPage: true,
+    });
+    copyScreenshotArtifacts('17-3d-popup-book-upright-standup.png');
 
     // 8. Test 2-Stage Reverse Closing: panel collapses first -> book closes -> overlay unmounts
     const closeRoomBookBtn = page.getByTestId('close-ledger-book-btn');
@@ -1143,7 +1194,7 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     await expect(overlayHost).toHaveAttribute('data-animation-state', 'CLOSING', { timeout: 1000 });
     await expect(virtualBook).toHaveAttribute('data-animation-state', 'closing');
 
-    // Verify complete smooth unmount after reverse transition (530ms total)
+    // Verify complete smooth unmount after reverse transition (600ms total)
     await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0, { timeout: 3000 });
 
     // Verify returned cleanly to 3D Stage
