@@ -184,7 +184,8 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     expect(defaultBook.props['data-animation-state']).toBe('open');
     expect(defaultBook.props.style?.perspective).toBe('1600px');
     expect(defaultBook.props.style?.transformStyle).toBe('preserve-3d');
-    expect(defaultBook.props.style?.transform).toBe('rotateX(16deg) rotateY(-2deg)');
+    expect(defaultBook.props.style?.transformOrigin).toBe('center center');
+    expect(defaultBook.props.style?.transform).toBe('rotateX(0deg) rotateY(0deg)');
     expect(defaultBook.props.className).toContain('book-state-open');
 
     // 2. opening state
@@ -193,6 +194,7 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
       animationState: 'opening',
     });
     expect(openingBook.props['data-animation-state']).toBe('opening');
+    expect(openingBook.props.style?.animation).toContain('bookOpenHinge 1400ms');
     expect(openingBook.props.className).toContain('book-state-opening');
 
     // 3. closing state
@@ -300,7 +302,7 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     const openingFlap = findNodeByTestId(hiddenBook, 'book-front-cover-flap');
     expect(openingFlap).toBeDefined();
     expect(openingFlap.props.style?.transformOrigin).toBe('left center');
-    expect(openingFlap.props.style?.animation).toContain('frontCoverFlapOpen');
+    expect(openingFlap.props.style?.animation).toContain('frontCoverFlapOpen 750ms');
 
     const hiddenMain = findNodeByTestId(hiddenBook, 'virtual-ledger-book-main');
     expect(hiddenMain.props['data-content-stage']).toBe('hidden');
@@ -328,12 +330,12 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
 
     const poppingMain = findNodeByTestId(poppingBook, 'virtual-ledger-book-main');
     expect(poppingMain.props['data-content-stage']).toBe('popping');
-    expect(poppingMain.props.style?.animation).toContain('popUpContentRise');
+    expect(poppingMain.props.style?.animation).toContain('popUpContentRise 700ms');
 
     const poppingPopup = findNodeByTestId(poppingBook, 'popup-standup-card');
     expect(poppingPopup).toBeDefined();
     expect(poppingPopup.props['data-content-stage']).toBe('popping');
-    expect(poppingPopup.props.style?.animation).toContain('popUpStandUp');
+    expect(poppingPopup.props.style?.animation).toContain('popUpStandUp 700ms');
 
     const poppingShadow = findNodeByTestId(poppingBook, 'popup-shadow-ground');
     expect(poppingShadow).toBeDefined();
@@ -403,9 +405,12 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     expect(sheet2.props.style?.transformOrigin).toBe('left center');
     expect(sheet3.props.style?.transformOrigin).toBe('left center');
 
-    expect(sheet1.props.style?.animation).toContain('pageSheetFlipOpen1');
-    expect(sheet2.props.style?.animation).toContain('pageSheetFlipOpen2');
-    expect(sheet3.props.style?.animation).toContain('pageSheetFlipOpen3');
+    expect(sheet1.props.style?.animation).toContain('pageSheetFlipOpen1 800ms');
+    expect(sheet1.props.style?.animation).toContain('220ms');
+    expect(sheet2.props.style?.animation).toContain('pageSheetFlipOpen2 750ms');
+    expect(sheet2.props.style?.animation).toContain('450ms');
+    expect(sheet3.props.style?.animation).toContain('pageSheetFlipOpen3 720ms');
+    expect(sheet3.props.style?.animation).toContain('680ms');
 
     // Verify 6 colored squares in Sheet 1 (Contents page matching video)
     const colorSquaresGrid = findNodeByTestId(openingBook, 'contents-color-squares');
@@ -443,6 +448,6 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     const innerTurnSheet = findNodeByTestId(turningBook, 'book-inner-turning-sheet');
     expect(innerTurnSheet).not.toBeNull();
     expect(innerTurnSheet.props['data-page-turning']).toBe('true');
-    expect(innerTurnSheet.props.style?.animation).toContain('innerPageTurnFlip');
+    expect(innerTurnSheet.props.style?.animation).toContain('innerPageTurnFlip 750ms');
   });
 });

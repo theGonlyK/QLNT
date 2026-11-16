@@ -98,7 +98,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
     if (contentStage === 'popping') {
       return {
         ...base,
-        animation: 'popUpContentRise 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        animation: 'popUpContentRise 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
       };
     }
 
@@ -138,7 +138,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
     if (contentStage === 'popping') {
       return {
         ...base,
-        animation: 'popUpStandUp 600ms cubic-bezier(0.16, 1.2, 0.3, 1) forwards',
+        animation: 'popUpStandUp 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
       };
     }
 
@@ -208,9 +208,9 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
 
     if (animationState === 'opening') {
       const openAnimations: Record<1 | 2 | 3, string> = {
-        1: 'pageSheetFlipOpen1 390ms cubic-bezier(0.22, 0.61, 0.36, 1) 70ms forwards',
-        2: 'pageSheetFlipOpen2 390ms cubic-bezier(0.22, 0.61, 0.36, 1) 140ms forwards',
-        3: 'pageSheetFlipOpen3 340ms cubic-bezier(0.22, 0.61, 0.36, 1) 210ms forwards',
+        1: 'pageSheetFlipOpen1 800ms cubic-bezier(0.22, 0.61, 0.36, 1) 220ms forwards',
+        2: 'pageSheetFlipOpen2 750ms cubic-bezier(0.22, 0.61, 0.36, 1) 450ms forwards',
+        3: 'pageSheetFlipOpen3 720ms cubic-bezier(0.22, 0.61, 0.36, 1) 680ms forwards',
       };
       return {
         ...base,
@@ -249,14 +249,14 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
       style={{
         perspective: '1600px',
         transformStyle: 'preserve-3d',
-        transformOrigin: 'left top',
+        transformOrigin: 'center center',
         transform:
           animationState === 'open'
-            ? 'rotateX(16deg) rotateY(-2deg)'
+            ? 'rotateX(0deg) rotateY(0deg)'
             : undefined,
         animation:
           animationState === 'opening'
-            ? 'bookOpenHinge 600ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+            ? 'bookOpenHinge 1400ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards'
             : animationState === 'closing'
               ? 'bookCloseHinge 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards'
               : undefined,
@@ -266,25 +266,25 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
       <style>{`
         @keyframes bookOpenHinge {
           0% {
-            transform: perspective(1600px) rotateX(16deg) rotateY(-65deg) scale(0.92);
+            transform: perspective(1600px) rotateX(10deg) rotateY(0deg) scale(0.96);
             opacity: 0.6;
           }
           60% {
-            transform: perspective(1600px) rotateX(16deg) rotateY(3deg) scale(1.02);
+            transform: perspective(1600px) rotateX(3deg) rotateY(0deg) scale(1.01);
             opacity: 0.98;
           }
           100% {
-            transform: perspective(1600px) rotateX(16deg) rotateY(-2deg) scale(1);
+            transform: perspective(1600px) rotateX(0deg) rotateY(0deg) scale(1);
             opacity: 1;
           }
         }
         @keyframes bookCloseHinge {
           0% {
-            transform: perspective(1600px) rotateX(16deg) rotateY(-2deg) scale(1);
+            transform: perspective(1600px) rotateX(0deg) rotateY(0deg) scale(1);
             opacity: 1;
           }
           100% {
-            transform: perspective(1600px) rotateX(16deg) rotateY(-75deg) scale(0.9);
+            transform: perspective(1600px) rotateX(12deg) rotateY(0deg) scale(0.94);
             opacity: 0;
           }
         }
@@ -610,7 +610,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
             transformOrigin: 'left center',
             transformStyle: 'preserve-3d',
             backfaceVisibility: 'hidden',
-            animation: 'innerPageTurnFlip 420ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards',
+            animation: 'innerPageTurnFlip 750ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards',
           }}
           aria-hidden="true"
         />
@@ -627,7 +627,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
           backfaceVisibility: 'hidden',
           animation:
             animationState === 'opening'
-              ? 'frontCoverFlapOpen 380ms cubic-bezier(0.22, 0.61, 0.36, 1) 0ms forwards'
+              ? 'frontCoverFlapOpen 750ms cubic-bezier(0.22, 0.61, 0.36, 1) 0ms forwards'
               : animationState === 'closing'
                 ? 'frontCoverFlapClose 350ms cubic-bezier(0.4, 0, 0.2, 1) forwards'
                 : undefined,
