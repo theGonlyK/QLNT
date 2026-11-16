@@ -227,4 +227,80 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     expect(bookCover).toBeDefined();
     expect(bookCover).not.toBeNull();
   });
+
+  it('supports contentStage (hidden, popping, visible, folding) and 3D front cover flap', () => {
+    const findNodeByTestId = (node: any, testId: string): any => {
+      if (!node) return null;
+      if (node.props && node.props['data-testid'] === testId) return node;
+      if (node.props && node.props.children) {
+        const children = Array.isArray(node.props.children)
+          ? node.props.children
+          : [node.props.children];
+        for (const child of children) {
+          const found = findNodeByTestId(child, testId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    // 1. Default contentStage is 'visible'
+    const defaultBook = VirtualLedgerBook({
+      floorMap: mockFloorMap,
+    });
+    expect(defaultBook.props['data-content-stage']).toBe('visible');
+
+    const defaultFlap = findNodeByTestId(defaultBook, 'book-front-cover-flap');
+    expect(defaultFlap).toBeDefined();
+    expect(defaultFlap).not.toBeNull();
+    expect(defaultFlap.props.style?.transformOrigin).toBe('left center');
+
+    const defaultMain = findNodeByTestId(defaultBook, 'virtual-ledger-book-main');
+    expect(defaultMain).toBeDefined();
+    expect(defaultMain.props['data-content-stage']).toBe('visible');
+    expect(defaultMain.props.style?.opacity).toBe(1);
+    expect(defaultMain.props.style?.transform).toBe('none');
+
+    // 2. contentStage = 'hidden' during Phase 1 opening
+    const hiddenBook = VirtualLedgerBook({
+      floorMap: mockFloorMap,
+      animationState: 'opening',
+      contentStage: 'hidden',
+    });
+    expect(hiddenBook.props['data-content-stage']).toBe('hidden');
+
+    const openingFlap = findNodeByTestId(hiddenBook, 'book-front-cover-flap');
+    expect(openingFlap).toBeDefined();
+    expect(openingFlap.props.style?.transformOrigin).toBe('left center');
+    expect(openingFlap.props.style?.animation).toContain('frontCoverFlapOpen');
+
+    const hiddenMain = findNodeByTestId(hiddenBook, 'virtual-ledger-book-main');
+    expect(hiddenMain.props['data-content-stage']).toBe('hidden');
+    expect(hiddenMain.props.style?.opacity).toBe(0);
+    expect(hiddenMain.props.style?.pointerEvents).toBe('none');
+    expect(hiddenMain.props.style?.transform).toBe('translateY(20px) scale(0.95)');
+
+    // 3. contentStage = 'popping' during Phase 2
+    const poppingBook = VirtualLedgerBook({
+      floorMap: mockFloorMap,
+      contentStage: 'popping',
+    });
+    expect(poppingBook.props['data-content-stage']).toBe('popping');
+
+    const poppingMain = findNodeByTestId(poppingBook, 'virtual-ledger-book-main');
+    expect(poppingMain.props['data-content-stage']).toBe('popping');
+    expect(poppingMain.props.style?.animation).toContain('popUpContentRise');
+
+    // 4. contentStage = 'folding' during reverse transition
+    const foldingBook = VirtualLedgerBook({
+      floorMap: mockFloorMap,
+      contentStage: 'folding',
+    });
+    expect(foldingBook.props['data-content-stage']).toBe('folding');
+
+    const foldingMain = findNodeByTestId(foldingBook, 'virtual-ledger-book-main');
+    expect(foldingMain.props['data-content-stage']).toBe('folding');
+    expect(foldingMain.props.style?.opacity).toBe(0);
+    expect(foldingMain.props.style?.pointerEvents).toBe('none');
+  });
 });

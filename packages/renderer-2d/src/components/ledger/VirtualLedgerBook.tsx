@@ -5,6 +5,8 @@ import { BookmarkFloorTabs } from './BookmarkFloorTabs';
 import { RoomDetailSinglePage } from './RoomDetailSinglePage';
 import { FloorMapRenderer } from '../FloorMapRenderer';
 
+export type LedgerContentStage = 'hidden' | 'popping' | 'visible' | 'folding';
+
 export interface VirtualLedgerBookProps {
   floorMap: FloorMapDTO;
   totalFloors?: number;
@@ -25,6 +27,14 @@ export interface VirtualLedgerBookProps {
    * - 'closing': hoạt ảnh gập sổ 3D phẳng về gáy sổ (~400ms)
    */
   animationState?: 'opening' | 'open' | 'closing';
+  /**
+   * Giai đoạn hiển thị nội dung sổ 3D theo chu trình 2 giai đoạn:
+   * - 'hidden': ẩn hoàn toàn nội dung thẻ main (khi sách đang mở bìa 0 - 550ms)
+   * - 'popping': kích hoạt hoạt ảnh Pop-up 3D trồi lên từ lòng sách (550 - 950ms)
+   * - 'visible': hiển thị bình thường, sẵn sàng tương tác (default)
+   * - 'folding': thu gọn nội dung trang trước khi gập bìa sổ (0 - 180ms)
+   */
+  contentStage?: LedgerContentStage;
 }
 
 export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
@@ -41,6 +51,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
   onApproveBill,
   className = '',
   animationState = 'open',
+  contentStage = 'visible',
 }) => {
   const isDetailMode = Boolean(roomDetail);
 
@@ -49,13 +60,54 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
   };
 
   const animStateClass = `book-state-${animationState}`;
+  const contentStageClass = `content-stage-${contentStage}`;
+
+  const getMainStyle = (): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      transformStyle: 'preserve-3d',
+    };
+
+    if (contentStage === 'hidden') {
+      return {
+        ...base,
+        opacity: 0,
+        pointerEvents: 'none',
+        transform: 'translateY(20px) scale(0.95)',
+      };
+    }
+
+    if (contentStage === 'popping') {
+      return {
+        ...base,
+        animation: 'popUpContentRise 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+      };
+    }
+
+    if (contentStage === 'folding') {
+      return {
+        ...base,
+        opacity: 0,
+        pointerEvents: 'none',
+        transform: 'translateY(20px) scale(0.95)',
+        animation: 'popUpContentFold 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
+      };
+    }
+
+    // contentStage === 'visible'
+    return {
+      ...base,
+      opacity: 1,
+      transform: 'none',
+    };
+  };
 
   return (
     <div
-      className={`qlnt-virtual-ledger-book ${animStateClass} relative flex flex-col w-full h-full max-w-5xl mx-auto bg-amber-50 rounded-xl shadow-2xl border-4 border-amber-900/40 overflow-hidden ${className}`.trim()}
+      className={`qlnt-virtual-ledger-book ${animStateClass} ${contentStageClass} relative flex flex-col w-full h-full max-w-5xl mx-auto bg-amber-50 rounded-xl shadow-2xl border-4 border-amber-900/40 overflow-hidden ${className}`.trim()}
       data-testid="virtual-ledger-book"
       data-mode={isDetailMode ? 'room-detail' : 'floor-map'}
       data-animation-state={animationState}
+      data-content-stage={contentStage}
       role="main"
       aria-label="Sổ quản lý ảo F04"
       style={{
@@ -117,7 +169,91 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
             opacity: 1;
           }
         }
+        @keyframes popUpContentRise {
+          0% {
+            opacity: 0;
+            transform: translateY(25px) scale(0.92);
+          }
+          70% {
+            opacity: 1;
+            transform: translateY(-4px) scale(1.01);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0px) scale(1);
+          }
+        }
+        @keyframes popUpContentFold {
+          0% {
+            opacity: 1;
+            transform: translateY(0px) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+          }
+        }
+        @keyframes frontCoverFlapOpen {
+          0% {
+            transform: perspective(1400px) rotateY(0deg);
+            opacity: 1;
+          }
+          75% {
+            opacity: 1;
+          }
+          100% {
+            transform: perspective(1400px) rotateY(-180deg);
+            opacity: 0;
+          }
+        }
+        @keyframes frontCoverFlapClose {
+          0% {
+            transform: perspective(1400px) rotateY(-180deg);
+            opacity: 0;
+          }
+          25% {
+            opacity: 1;
+          }
+          100% {
+            transform: perspective(1400px) rotateY(0deg);
+            opacity: 1;
+          }
+        }
       `}</style>
+
+      {/* 3D Front Cover Flap (Nắp bìa da lật mở 3D từ 0deg sang -180deg quanh lề trái gáy sách) */}
+      <div
+        data-testid="book-front-cover-flap"
+        className="book-front-cover-flap pointer-events-none absolute inset-0 z-40 rounded-xl overflow-hidden shadow-2xl bg-gradient-to-br from-amber-950 via-amber-900 to-amber-950 border-4 border-amber-900 flex flex-col items-center justify-center select-none text-center"
+        aria-hidden="true"
+        style={{
+          transformOrigin: 'left center',
+          transformStyle: 'preserve-3d',
+          backfaceVisibility: 'hidden',
+          animation:
+            animationState === 'opening'
+              ? 'frontCoverFlapOpen 550ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards'
+              : animationState === 'closing'
+                ? 'frontCoverFlapClose 350ms cubic-bezier(0.4, 0, 0.2, 1) forwards'
+                : undefined,
+          transform: animationState === 'open' ? 'rotateY(-180deg)' : undefined,
+          opacity: animationState === 'open' ? 0 : undefined,
+          pointerEvents: 'none',
+        }}
+      >
+        <div className="absolute inset-3 border-2 border-dashed border-amber-500/40 rounded-lg pointer-events-none" />
+        <div className="relative z-10 px-6 py-4 rounded-lg bg-stone-900/70 border border-amber-500/40 shadow-xl max-w-md">
+          <div className="w-9 h-9 mx-auto mb-2 rounded-full border border-amber-400 flex items-center justify-center text-amber-300 font-serif font-bold text-sm shadow">
+            F04
+          </div>
+          <h2 className="font-serif font-bold text-lg md:text-xl text-amber-200 tracking-wider uppercase">
+            Sổ Quản Lý Phòng
+          </h2>
+          <p className="text-amber-400/80 text-xs mt-1 font-mono tracking-widest uppercase">
+            Toà Nhà F04 — Phiên Bản 3D
+          </p>
+        </div>
+      </div>
 
       {/* 3D Book Cover Outer Edge & Stitching Detail */}
       <div
@@ -183,14 +319,10 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
 
         {/* Content Pane: Either Floor Map 2D OR Room Detail Single-Page */}
         <main
+          data-testid="virtual-ledger-book-main"
+          data-content-stage={contentStage}
           className="flex-1 relative p-2 md:p-4 overflow-hidden bg-[#FAF7EE]"
-          style={{
-            transformStyle: 'preserve-3d',
-            animation:
-              animationState === 'opening'
-                ? 'pagePopUpUnfold 600ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards'
-                : undefined,
-          }}
+          style={getMainStyle()}
         >
           {isDetailMode && roomDetail ? (
             <RoomDetailSinglePage

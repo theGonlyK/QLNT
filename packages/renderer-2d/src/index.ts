@@ -36,7 +36,7 @@ export type {
 export type { RewardBadgeSVGProps } from './components/icons/RewardBadgeSVG';
 export type { BookmarkFloorTabsProps } from './components/ledger/BookmarkFloorTabs';
 export type { RoomDetailSinglePageProps } from './components/ledger/RoomDetailSinglePage';
-export type { VirtualLedgerBookProps } from './components/ledger/VirtualLedgerBook';
+export type { VirtualLedgerBookProps, LedgerContentStage } from './components/ledger/VirtualLedgerBook';
 
 // Constants
 export {
