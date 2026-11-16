@@ -36,10 +36,23 @@ export interface VirtualLedgerBookProps {
    */
   contentStage?: LedgerContentStage;
   /**
+   * Kích hoạt hiệu ứng lật trang giấy nội bộ khi chuyển từ sơ đồ tầng sang trang thông tin phòng hoặc đổi tầng
+   */
+  isPageTurning?: boolean;
+  /**
    * Tùy chọn truyền node con tùy chỉnh vào thẻ Pop-up dựng đứng (popup-standup-card)
    */
   children?: React.ReactNode;
 }
+
+const CONTENTS_COLOR_SQUARES = [
+  { id: 'blue', label: 'Tầng 1', colorClass: 'bg-blue-500' },
+  { id: 'purple', label: 'Tầng 2', colorClass: 'bg-violet-500' },
+  { id: 'pink', label: 'Tầng 3', colorClass: 'bg-pink-500' },
+  { id: 'green', label: 'Tầng 4', colorClass: 'bg-emerald-500' },
+  { id: 'orange', label: 'Tầng 5', colorClass: 'bg-orange-500' },
+  { id: 'yellow', label: 'Hồ sơ', colorClass: 'bg-amber-400' },
+];
 
 export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
   floorMap,
@@ -56,6 +69,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
   className = '',
   animationState = 'open',
   contentStage = 'visible',
+  isPageTurning = false,
   children,
 }) => {
   const isDetailMode = Boolean(roomDetail);
@@ -182,6 +196,45 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
       ...base,
       opacity: 0.6,
       transform: 'scaleX(1) scaleY(1)',
+    };
+  };
+
+  const getFlipSheetStyle = (sheetIndex: 1 | 2 | 3): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      transformOrigin: 'left center',
+      transformStyle: 'preserve-3d',
+      backfaceVisibility: 'hidden',
+      pointerEvents: 'none',
+    };
+
+    if (animationState === 'opening') {
+      const openAnimations: Record<1 | 2 | 3, string> = {
+        1: 'pageSheetFlipOpen1 390ms cubic-bezier(0.22, 0.61, 0.36, 1) 70ms forwards',
+        2: 'pageSheetFlipOpen2 390ms cubic-bezier(0.22, 0.61, 0.36, 1) 140ms forwards',
+        3: 'pageSheetFlipOpen3 340ms cubic-bezier(0.22, 0.61, 0.36, 1) 210ms forwards',
+      };
+      return {
+        ...base,
+        animation: openAnimations[sheetIndex],
+      };
+    }
+
+    if (animationState === 'closing') {
+      const closeAnimations: Record<1 | 2 | 3, string> = {
+        3: 'pageSheetFlipClose3 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms forwards',
+        2: 'pageSheetFlipClose2 300ms cubic-bezier(0.4, 0, 0.2, 1) 60ms forwards',
+        1: 'pageSheetFlipClose1 300ms cubic-bezier(0.4, 0, 0.2, 1) 120ms forwards',
+      };
+      return {
+        ...base,
+        animation: closeAnimations[sheetIndex],
+      };
+    }
+
+    return {
+      ...base,
+      transform: 'rotateY(-180deg)',
+      opacity: 0,
     };
   };
 
@@ -335,7 +388,234 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
             filter: blur(6px);
           }
         }
+        @keyframes pageSheetFlipOpen1 {
+          0% {
+            transform: perspective(1600px) rotateY(0deg);
+            opacity: 1;
+          }
+          75% {
+            opacity: 1;
+          }
+          100% {
+            transform: perspective(1600px) rotateY(-180deg);
+            opacity: 0;
+          }
+        }
+        @keyframes pageSheetFlipOpen2 {
+          0% {
+            transform: perspective(1600px) rotateY(0deg);
+            opacity: 1;
+          }
+          75% {
+            opacity: 1;
+          }
+          100% {
+            transform: perspective(1600px) rotateY(-180deg);
+            opacity: 0;
+          }
+        }
+        @keyframes pageSheetFlipOpen3 {
+          0% {
+            transform: perspective(1600px) rotateY(0deg);
+            opacity: 1;
+          }
+          75% {
+            opacity: 1;
+          }
+          100% {
+            transform: perspective(1600px) rotateY(-180deg);
+            opacity: 0;
+          }
+        }
+        @keyframes pageSheetFlipClose3 {
+          0% {
+            transform: perspective(1600px) rotateY(-180deg);
+            opacity: 0;
+          }
+          25% {
+            opacity: 1;
+          }
+          100% {
+            transform: perspective(1600px) rotateY(0deg);
+            opacity: 1;
+          }
+        }
+        @keyframes pageSheetFlipClose2 {
+          0% {
+            transform: perspective(1600px) rotateY(-180deg);
+            opacity: 0;
+          }
+          25% {
+            opacity: 1;
+          }
+          100% {
+            transform: perspective(1600px) rotateY(0deg);
+            opacity: 1;
+          }
+        }
+        @keyframes pageSheetFlipClose1 {
+          0% {
+            transform: perspective(1600px) rotateY(-180deg);
+            opacity: 0;
+          }
+          25% {
+            opacity: 1;
+          }
+          100% {
+            transform: perspective(1600px) rotateY(0deg);
+            opacity: 1;
+          }
+        }
+        @keyframes innerPageTurnFlip {
+          0% {
+            transform: perspective(1600px) rotateY(0deg);
+            opacity: 0.96;
+          }
+          65% {
+            transform: perspective(1600px) rotateY(-120deg);
+            opacity: 0.9;
+          }
+          100% {
+            transform: perspective(1600px) rotateY(-180deg);
+            opacity: 0;
+          }
+        }
       `}</style>
+
+      {/* Khối mép giấy trắng xếp chồng bên cạnh phải cuốn sách */}
+      <div
+        data-testid="book-page-block-edges"
+        className="book-page-block-edges pointer-events-none absolute top-2 bottom-2 right-0 w-2.5 z-20 rounded-r-lg border-l border-amber-900/15"
+        style={{
+          background:
+            'repeating-linear-gradient(to right, #FAF7EE 0px, #FAF7EE 2px, #E7E0CC 2px, #E7E0CC 3px)',
+          boxShadow: 'inset 2px 0 4px rgba(120, 80, 30, 0.18)',
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Dải ruy-băng đánh dấu trang màu xanh navy ở khe dưới gáy sách */}
+      <div
+        data-testid="book-ribbon-bookmark"
+        className="book-ribbon-bookmark pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-10 z-25 shadow-md"
+        style={{
+          background: 'linear-gradient(180deg, #172554 0%, #1e3a8a 70%, #1e40af 100%)',
+          clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%)',
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Hệ thống 3 tờ trang sách lật mở nối tiếp nhau (Staggered Sequential Fanning Pages) */}
+      <div
+        data-testid="book-flip-pages-stack"
+        data-animation-state={animationState}
+        className="book-flip-pages-stack pointer-events-none absolute inset-0 z-30"
+        style={{
+          transformStyle: 'preserve-3d',
+          perspective: '1600px',
+        }}
+        aria-hidden="true"
+      >
+        {/* Tờ 1: Trang Mục Lục (Contents) với 6 ô vuông màu sắc như video mẫu */}
+        <div
+          data-testid="book-flip-sheet-1"
+          className="book-flip-sheet-1 pointer-events-none absolute inset-1 rounded-lg bg-[#FAF7EE] border border-amber-900/20 shadow-xl p-6 flex flex-col justify-between"
+          style={{ ...getFlipSheetStyle(1), zIndex: 33 }}
+        >
+          <div>
+            <div className="text-[11px] font-mono tracking-widest text-amber-900/70 uppercase mb-1">
+              Sổ Quản Lý Ảo — Toà Nhà F04
+            </div>
+            <h3 className="font-serif font-bold text-lg md:text-xl text-amber-950 border-b-2 border-amber-800/30 pb-2">
+              MỤC LỤC HỒ SƠ TÒA NHÀ F04 (CONTENTS)
+            </h3>
+            <div
+              data-testid="contents-color-squares"
+              className="grid grid-cols-3 gap-3 mt-5 max-w-xs"
+            >
+              {CONTENTS_COLOR_SQUARES.map((sq) => (
+                <div
+                  key={sq.id}
+                  className={`${sq.colorClass} h-10 rounded-md shadow-sm flex items-center justify-center text-white text-[10px] font-bold tracking-wide`}
+                >
+                  {sq.label}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="text-[10px] font-mono text-stone-500 border-t border-dashed border-amber-800/20 pt-2 flex justify-between">
+            <span>CHƯƠNG I — MỤC LỤC</span>
+            <span>TRANG 01</span>
+          </div>
+        </div>
+
+        {/* Tờ 2: Trang Tổng Quan Mặt Bằng Tầng */}
+        <div
+          data-testid="book-flip-sheet-2"
+          className="book-flip-sheet-2 pointer-events-none absolute inset-1 rounded-lg bg-[#F8F5EC] border border-amber-900/20 shadow-xl p-6 flex flex-col justify-between"
+          style={{ ...getFlipSheetStyle(2), zIndex: 32 }}
+        >
+          <div>
+            <div className="text-[11px] font-mono tracking-widest text-amber-900/70 uppercase mb-1">
+              Tổng Quan Mặt Bằng — Tầng {activeFloor}
+            </div>
+            <h3 className="font-serif font-bold text-lg text-amber-950 border-b-2 border-amber-800/30 pb-2">
+              SƠ ĐỒ TỔNG QUAN CÁC TẦNG &amp; ĐỊNH MỨC
+            </h3>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-stone-700">
+              <div className="p-3 rounded bg-amber-100/50 border border-amber-800/15">
+                Quy mô: {totalFloors} tầng quản lý
+              </div>
+              <div className="p-3 rounded bg-amber-100/50 border border-amber-800/15">
+                Số phòng tầng {activeFloor}: {floorMap.rooms.length} phòng
+              </div>
+            </div>
+          </div>
+          <div className="text-[10px] font-mono text-stone-500 border-t border-dashed border-amber-800/20 pt-2 flex justify-between">
+            <span>CHƯƠNG II — MẶT BẰNG</span>
+            <span>TRANG 02</span>
+          </div>
+        </div>
+
+        {/* Tờ 3: Trang Chuyển Tiếp Hồ Sơ Phòng */}
+        <div
+          data-testid="book-flip-sheet-3"
+          className="book-flip-sheet-3 pointer-events-none absolute inset-1 rounded-lg bg-[#F7F4E9] border border-amber-900/20 shadow-xl p-6 flex flex-col justify-between"
+          style={{ ...getFlipSheetStyle(3), zIndex: 31 }}
+        >
+          <div>
+            <div className="text-[11px] font-mono tracking-widest text-amber-900/70 uppercase mb-1">
+              Hồ Sơ Chi Tiết
+            </div>
+            <h3 className="font-serif font-bold text-lg text-amber-950 border-b-2 border-amber-800/30 pb-2">
+              HỒ SƠ ĐỊA CHÍNH &amp; THÔNG TIN PHÒNG
+            </h3>
+            <p className="mt-4 text-xs text-stone-600 leading-relaxed">
+              Chuẩn bị mở trang thông tin phòng, hợp đồng khách thuê, chỉ số điện nước và bảng điều khiển đối soát.
+            </p>
+          </div>
+          <div className="text-[10px] font-mono text-stone-500 border-t border-dashed border-amber-800/20 pt-2 flex justify-between">
+            <span>CHƯƠNG III — THÔNG TIN PHÒNG</span>
+            <span>TRANG 03</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Tờ giấy lật chuyển cảnh nội bộ khi chọn phòng hoặc đổi tầng trong lúc sổ đang mở */}
+      {isPageTurning && (
+        <div
+          data-testid="book-inner-turning-sheet"
+          data-page-turning={isPageTurning ? 'true' : 'false'}
+          className="book-inner-turning-sheet pointer-events-none absolute inset-2 z-35 rounded-lg bg-[#FAF7EE] border border-amber-900/25 shadow-2xl"
+          style={{
+            transformOrigin: 'left center',
+            transformStyle: 'preserve-3d',
+            backfaceVisibility: 'hidden',
+            animation: 'innerPageTurnFlip 420ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards',
+          }}
+          aria-hidden="true"
+        />
+      )}
 
       {/* 3D Front Cover Flap (Nắp bìa da lật mở 3D từ 0deg sang -180deg quanh lề trái gáy sách) */}
       <div
@@ -348,7 +628,7 @@ export const VirtualLedgerBook: React.FC<VirtualLedgerBookProps> = ({
           backfaceVisibility: 'hidden',
           animation:
             animationState === 'opening'
-              ? 'frontCoverFlapOpen 550ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards'
+              ? 'frontCoverFlapOpen 380ms cubic-bezier(0.22, 0.61, 0.36, 1) 0ms forwards'
               : animationState === 'closing'
                 ? 'frontCoverFlapClose 350ms cubic-bezier(0.4, 0, 0.2, 1) forwards'
                 : undefined,

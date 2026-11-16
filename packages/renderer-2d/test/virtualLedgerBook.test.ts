@@ -362,4 +362,87 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     expect(foldingShadow).toBeDefined();
     expect(foldingShadow.props.style?.opacity).toBe(0);
   });
+
+  it('renders multi-page sequential flipping sheets (book-flip-sheet-1..3), page block edges, bookmark ribbon, and inner turning sheet', () => {
+    const findNodeByTestId = (node: any, testId: string): any => {
+      if (!node) return null;
+      if (node.props && node.props['data-testid'] === testId) return node;
+      if (node.props && node.props.children) {
+        const children = Array.isArray(node.props.children)
+          ? node.props.children
+          : [node.props.children];
+        for (const child of children) {
+          const found = findNodeByTestId(child, testId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    // 1. Opening state: cover + 3 sequential sheets fan open with staggered delays before room info page appears
+    const openingBook = VirtualLedgerBook({
+      floorMap: mockFloorMap,
+      roomDetail: mockRoomDetail,
+      animationState: 'opening',
+      contentStage: 'hidden',
+    });
+
+    const pagesStack = findNodeByTestId(openingBook, 'book-flip-pages-stack');
+    expect(pagesStack).not.toBeNull();
+    expect(pagesStack.props['data-animation-state']).toBe('opening');
+
+    const sheet1 = findNodeByTestId(openingBook, 'book-flip-sheet-1');
+    const sheet2 = findNodeByTestId(openingBook, 'book-flip-sheet-2');
+    const sheet3 = findNodeByTestId(openingBook, 'book-flip-sheet-3');
+
+    expect(sheet1).not.toBeNull();
+    expect(sheet2).not.toBeNull();
+    expect(sheet3).not.toBeNull();
+
+    expect(sheet1.props.style?.transformOrigin).toBe('left center');
+    expect(sheet2.props.style?.transformOrigin).toBe('left center');
+    expect(sheet3.props.style?.transformOrigin).toBe('left center');
+
+    expect(sheet1.props.style?.animation).toContain('pageSheetFlipOpen1');
+    expect(sheet2.props.style?.animation).toContain('pageSheetFlipOpen2');
+    expect(sheet3.props.style?.animation).toContain('pageSheetFlipOpen3');
+
+    // Verify 6 colored squares in Sheet 1 (Contents page matching video)
+    const colorSquaresGrid = findNodeByTestId(openingBook, 'contents-color-squares');
+    expect(colorSquaresGrid).not.toBeNull();
+    expect(colorSquaresGrid.props.children).toHaveLength(6);
+
+    // Verify page block edges and navy ribbon bookmark
+    const pageEdges = findNodeByTestId(openingBook, 'book-page-block-edges');
+    expect(pageEdges).not.toBeNull();
+
+    const ribbon = findNodeByTestId(openingBook, 'book-ribbon-bookmark');
+    expect(ribbon).not.toBeNull();
+
+    // 2. Closing state: sheets flip back in reverse order
+    const closingBook = VirtualLedgerBook({
+      floorMap: mockFloorMap,
+      animationState: 'closing',
+      contentStage: 'folding',
+    });
+    const closingSheet1 = findNodeByTestId(closingBook, 'book-flip-sheet-1');
+    const closingSheet2 = findNodeByTestId(closingBook, 'book-flip-sheet-2');
+    const closingSheet3 = findNodeByTestId(closingBook, 'book-flip-sheet-3');
+    expect(closingSheet1.props.style?.animation).toContain('pageSheetFlipClose1');
+    expect(closingSheet2.props.style?.animation).toContain('pageSheetFlipClose2');
+    expect(closingSheet3.props.style?.animation).toContain('pageSheetFlipClose3');
+
+    // 3. Inner page turning sheet when switching from floor map to room detail page
+    const turningBook = VirtualLedgerBook({
+      floorMap: mockFloorMap,
+      roomDetail: mockRoomDetail,
+      animationState: 'open',
+      contentStage: 'visible',
+      isPageTurning: true,
+    });
+    const innerTurnSheet = findNodeByTestId(turningBook, 'book-inner-turning-sheet');
+    expect(innerTurnSheet).not.toBeNull();
+    expect(innerTurnSheet.props['data-page-turning']).toBe('true');
+    expect(innerTurnSheet.props.style?.animation).toContain('innerPageTurnFlip');
+  });
 });
