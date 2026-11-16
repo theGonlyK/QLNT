@@ -121,6 +121,11 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
       'data-mode',
       'floor-map'
     );
+    await expect(page.getByTestId('virtual-ledger-book')).toHaveAttribute(
+      'data-animation-state',
+      'open',
+      { timeout: 4500 }
+    );
     await page.getByTestId('close-ledger-book-btn').click();
     await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0);
 
@@ -199,6 +204,11 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
       'data-mode',
       'floor-map'
     );
+    await expect(page.getByTestId('virtual-ledger-book')).toHaveAttribute(
+      'data-animation-state',
+      'open',
+      { timeout: 4500 }
+    );
 
     // Flip to Floor 2 while OFFLINE
     await page.getByTestId('floor-tab-2').click();
@@ -224,6 +234,11 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     await expect(page.getByTestId('virtual-ledger-book')).toHaveAttribute(
       'data-mode',
       'floor-map'
+    );
+    await expect(page.getByTestId('virtual-ledger-book')).toHaveAttribute(
+      'data-animation-state',
+      'open',
+      { timeout: 4500 }
     );
     await page.getByTestId('close-ledger-book-btn').click();
     await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0);
@@ -279,6 +294,11 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     await expect(page.getByTestId('virtual-ledger-book')).toHaveAttribute(
       'data-mode',
       'floor-map'
+    );
+    await expect(page.getByTestId('virtual-ledger-book')).toHaveAttribute(
+      'data-animation-state',
+      'open',
+      { timeout: 4500 }
     );
     await page.getByTestId('floor-tab-4').click();
     await expect(page.getByTestId('virtual-ledger-book')).toContainText('TẦNG 4');
