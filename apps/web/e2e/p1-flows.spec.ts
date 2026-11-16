@@ -1098,6 +1098,19 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
 
     // Check Stage 1 at t=200ms-250ms: Sách đang mở, panel thông tin đang ẩn
     await page.waitForTimeout(220);
+
+    // Capture screenshot: 18-3d-book-flipping-pages-sequence.png (Lật từng trang sách nối tiếp ngay tại t≈220ms)
+    const seq18Path = path.join(SCREENSHOT_DIR, '18-3d-book-flipping-pages-sequence.png');
+    await page.screenshot({
+      path: seq18Path,
+      fullPage: true,
+    });
+    copyScreenshotArtifacts('18-3d-book-flipping-pages-sequence.png');
+    const coordinatorBrainDir = '/Users/minhntv/.gemini/antigravity-cli/brain/b01f57a0-4d41-4d53-9533-2dd802b0fa85';
+    if (fs.existsSync(coordinatorBrainDir)) {
+      fs.copyFileSync(seq18Path, path.join(coordinatorBrainDir, '18-3d-book-flipping-pages-sequence.png'));
+    }
+
     await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPENING');
     await expect(overlayHost).toHaveAttribute('data-content-stage', 'hidden');
     await expect(virtualBook).toHaveAttribute('data-animation-state', 'opening');
@@ -1131,18 +1144,6 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
       fullPage: true,
     });
     copyScreenshotArtifacts('14-3d-book-stage1-opening.png');
-
-    // Capture screenshot: 18-3d-book-flipping-pages-sequence.png (Lật từng trang sách nối tiếp)
-    const seq18Path = path.join(SCREENSHOT_DIR, '18-3d-book-flipping-pages-sequence.png');
-    await page.screenshot({
-      path: seq18Path,
-      fullPage: true,
-    });
-    copyScreenshotArtifacts('18-3d-book-flipping-pages-sequence.png');
-    const coordinatorBrainDir = '/Users/minhntv/.gemini/antigravity-cli/brain/b01f57a0-4d41-4d53-9533-2dd802b0fa85';
-    if (fs.existsSync(coordinatorBrainDir)) {
-      fs.copyFileSync(seq18Path, path.join(coordinatorBrainDir, '18-3d-book-flipping-pages-sequence.png'));
-    }
 
     // 7. Stage 2 (after 850ms - 1050ms): Book fully open, information panel pops up & revealed
     await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPEN', { timeout: 3000 });
