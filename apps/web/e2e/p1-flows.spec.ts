@@ -1118,12 +1118,31 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     expect(Number(panelStage1Style.opacity)).toBe(0);
     expect(panelStage1Style.pointerEvents).toBe('none');
 
+    // Verify staggered page-flip sheets & ribbon bookmark are present during Stage 1
+    await expect(page.getByTestId('book-flip-pages-stack')).toBeAttached();
+    await expect(page.getByTestId('book-flip-sheet-1')).toBeAttached();
+    await expect(page.getByTestId('book-flip-sheet-2')).toBeAttached();
+    await expect(page.getByTestId('book-flip-sheet-3')).toBeAttached();
+    await expect(page.getByTestId('book-ribbon-bookmark')).toBeAttached();
+
     // Capture screenshot: 14-3d-book-stage1-opening.png (Sách đang mở bìa 3D, panel thông tin ẩn hoàn toàn)
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, '14-3d-book-stage1-opening.png'),
       fullPage: true,
     });
     copyScreenshotArtifacts('14-3d-book-stage1-opening.png');
+
+    // Capture screenshot: 18-3d-book-flipping-pages-sequence.png (Lật từng trang sách nối tiếp)
+    const seq18Path = path.join(SCREENSHOT_DIR, '18-3d-book-flipping-pages-sequence.png');
+    await page.screenshot({
+      path: seq18Path,
+      fullPage: true,
+    });
+    copyScreenshotArtifacts('18-3d-book-flipping-pages-sequence.png');
+    const coordinatorBrainDir = '/Users/minhntv/.gemini/antigravity-cli/brain/b01f57a0-4d41-4d53-9533-2dd802b0fa85';
+    if (fs.existsSync(coordinatorBrainDir)) {
+      fs.copyFileSync(seq18Path, path.join(coordinatorBrainDir, '18-3d-book-flipping-pages-sequence.png'));
+    }
 
     // 7. Stage 2 (after 850ms - 1050ms): Book fully open, information panel pops up & revealed
     await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPEN', { timeout: 3000 });
@@ -1182,6 +1201,17 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
       fullPage: true,
     });
     copyScreenshotArtifacts('17-3d-popup-book-upright-standup.png');
+
+    // Capture screenshot: 19-3d-book-room-info-page-revealed.png (Trang thông tin phòng được mở ra sau khi lật trang)
+    const seq19Path = path.join(SCREENSHOT_DIR, '19-3d-book-room-info-page-revealed.png');
+    await page.screenshot({
+      path: seq19Path,
+      fullPage: true,
+    });
+    copyScreenshotArtifacts('19-3d-book-room-info-page-revealed.png');
+    if (fs.existsSync(coordinatorBrainDir)) {
+      fs.copyFileSync(seq19Path, path.join(coordinatorBrainDir, '19-3d-book-room-info-page-revealed.png'));
+    }
 
     // 8. Test 2-Stage Reverse Closing: panel collapses first -> book closes -> overlay unmounts
     const closeRoomBookBtn = page.getByTestId('close-ledger-book-btn');
