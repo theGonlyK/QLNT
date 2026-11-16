@@ -234,6 +234,11 @@ export class FloorCutawayRenderer {
     corridorMesh.userData['type'] = 'cutaway_corridor';
     this.group.add(corridorMesh);
 
+    // 1b. Cutaway hemisphere fill light for bright interior visibility
+    const hemiLight = new THREE.HemisphereLight(0xfffdf5, 0xd6c7b2, 0.95);
+    hemiLight.name = 'CutawayHemisphereLight';
+    this.group.add(hemiLight);
+
     // 2. Build each room
     for (let i = 0; i < n; i++) {
       const roomConfig = rooms[i]!;
@@ -309,7 +314,7 @@ export class FloorCutawayRenderer {
     const floorGeo = new THREE.BoxGeometry(W, 0.15, D);
     const floorMat = new THREE.MeshStandardMaterial({
       color: 0x8b5a2b, // Warm oak flooring
-      roughness: 0.65,
+      roughness: 0.5,
       metalness: 0.05,
     });
     const floorMesh = new THREE.Mesh(floorGeo, floorMat);
@@ -333,8 +338,8 @@ export class FloorCutawayRenderer {
 
     // --- B. Cutaway Walls (1.2m Height with #1e293b dark trim) ---
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0xe0ded8,
-      roughness: 0.85,
+      color: 0xf5f2eb,
+      roughness: 0.78,
     });
     const trimMat = new THREE.MeshStandardMaterial({
       color: 0x1e293b,
@@ -441,6 +446,54 @@ export class FloorCutawayRenderer {
       roomConfig.status === 'OCCUPIED' ||
       Boolean(roomConfig.tenantName) ||
       Boolean(roomConfig.avatarConfig);
+
+    // --- F2. Room Electric Light & Wall-Mounted LED Lamp Fixture ---
+    const roomLight = new THREE.PointLight(
+      0xfff1c9,
+      isOccupied ? 8.5 : 4.5,
+      8.0,
+      1.35,
+    );
+    roomLight.position.set(0, 1.85, 0);
+    roomLight.userData = {
+      type: 'room_electric_light',
+      roomId: roomConfig.roomId,
+    };
+    roomGroup.add(roomLight);
+
+    const lampFixture = new THREE.Group();
+    lampFixture.name = `RoomLampFixture_${roomCode}`;
+    lampFixture.userData = {
+      type: 'room_lamp_fixture',
+      roomId: roomConfig.roomId,
+    };
+    const baseMat = new THREE.MeshStandardMaterial({
+      color: 0x334155,
+      roughness: 0.35,
+      metalness: 0.6,
+    });
+    const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.06, 0.04), baseMat);
+    lampFixture.add(baseMesh);
+
+    const bulbMat = new THREE.MeshStandardMaterial({
+      color: 0xfff8e7,
+      emissive: 0xffe49e,
+      emissiveIntensity: isOccupied ? 1.8 : 0.9,
+      roughness: 0.2,
+    });
+    const bulbMesh = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.04), bulbMat);
+    bulbMesh.position.set(0, 0, 0.03);
+    lampFixture.add(bulbMesh);
+
+    lampFixture.position.set(
+      0,
+      1.08,
+      row === 0 ? -D / 2 + T + 0.06 : D / 2 - T - 0.06,
+    );
+    if (row !== 0) {
+      lampFixture.rotation.y = Math.PI;
+    }
+    roomGroup.add(lampFixture);
 
     if (isOccupied) {
       const action =

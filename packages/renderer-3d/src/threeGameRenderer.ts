@@ -902,6 +902,10 @@ export class ThreeGameRenderer implements IGameRenderer {
     // (Yaw = 45 deg, Pitch = 35.264 deg, Zoom = 1.215)
     this.resetFloorIsometricCamera();
 
+    // Boost ambient & directional lighting for bright cutaway interior visibility
+    this.lighting.ambient.intensity = 0.95;
+    this.lighting.directional.intensity = 1.45;
+
     return Promise.resolve();
   }
 
@@ -920,6 +924,11 @@ export class ThreeGameRenderer implements IGameRenderer {
     }
     this.clearFloorCutaway();
     this.resetIsometricCamera();
+
+    // Restore default building-view lighting intensities
+    this.lighting.ambient.intensity = 0.6;
+    this.lighting.directional.intensity = 1.2;
+
     return Promise.resolve();
   }
 

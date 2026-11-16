@@ -378,6 +378,51 @@ describe('FloorCutawayRenderer & SleepingBadge', () => {
 
     badge.dispose();
   });
+
+  it('adds CutawayHemisphereLight and per-room PointLight + wall lamp fixture', () => {
+    const group = cutawayRenderer.buildFloorCutaway(0, mockRooms);
+
+    const hemiLight = group.children.find(
+      (c): c is THREE.HemisphereLight =>
+        c instanceof THREE.HemisphereLight && c.name === 'CutawayHemisphereLight',
+    );
+    expect(hemiLight).toBeDefined();
+    expect(hemiLight!.intensity).toBe(0.95);
+
+    // Occupied room (room-101)
+    const occupiedRoom = cutawayRenderer.getRoomGroup('room-101');
+    expect(occupiedRoom).toBeDefined();
+    const occupiedLight = occupiedRoom!.children.find(
+      (c): c is THREE.PointLight =>
+        c instanceof THREE.PointLight && c.userData['type'] === 'room_electric_light',
+    );
+    expect(occupiedLight).toBeDefined();
+    expect(occupiedLight!.color.getHex()).toBe(0xfff1c9);
+    expect(occupiedLight!.intensity).toBe(8.5);
+
+    const occupiedFixture = occupiedRoom!.children.find(
+      (c): c is THREE.Group =>
+        c instanceof THREE.Group && c.userData['type'] === 'room_lamp_fixture',
+    );
+    expect(occupiedFixture).toBeDefined();
+
+    // Vacant room (room-103)
+    const vacantRoom = cutawayRenderer.getRoomGroup('room-103');
+    expect(vacantRoom).toBeDefined();
+    const vacantLight = vacantRoom!.children.find(
+      (c): c is THREE.PointLight =>
+        c instanceof THREE.PointLight && c.userData['type'] === 'room_electric_light',
+    );
+    expect(vacantLight).toBeDefined();
+    expect(vacantLight!.color.getHex()).toBe(0xfff1c9);
+    expect(vacantLight!.intensity).toBe(4.5);
+
+    const vacantFixture = vacantRoom!.children.find(
+      (c): c is THREE.Group =>
+        c instanceof THREE.Group && c.userData['type'] === 'room_lamp_fixture',
+    );
+    expect(vacantFixture).toBeDefined();
+  });
 });
 
 describe('ThreeGameRenderer Cutaway Integration', () => {
@@ -503,5 +548,22 @@ describe('ThreeGameRenderer Cutaway Integration', () => {
   it('calls update on simulation loop including cutaway animation', async () => {
     await renderer.renderFloorCutaway(0, rooms);
     expect(() => renderer.update(0.016)).not.toThrow();
+  });
+
+  it('boosts lighting on transitionToFloor() and restores on transitionToBuilding()', async () => {
+    await renderer.renderBuilding({
+      propertyId: 'prop-1',
+      totalFloors: 2,
+      roomsPerFloor: 2,
+      position: { x: 0, y: 0, z: 0 },
+    });
+
+    await renderer.transitionToFloor(1);
+    expect(renderer.lighting.ambient.intensity).toBe(0.95);
+    expect(renderer.lighting.directional.intensity).toBe(1.45);
+
+    await renderer.transitionToBuilding();
+    expect(renderer.lighting.ambient.intensity).toBe(0.6);
+    expect(renderer.lighting.directional.intensity).toBe(1.2);
   });
 });
