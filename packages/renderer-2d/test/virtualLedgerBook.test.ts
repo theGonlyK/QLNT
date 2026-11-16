@@ -182,8 +182,9 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
       floorMap: mockFloorMap,
     });
     expect(defaultBook.props['data-animation-state']).toBe('open');
-    expect(defaultBook.props.style?.perspective).toBe('1400px');
+    expect(defaultBook.props.style?.perspective).toBe('1600px');
     expect(defaultBook.props.style?.transformStyle).toBe('preserve-3d');
+    expect(defaultBook.props.style?.transform).toBe('rotateX(16deg) rotateY(-2deg)');
     expect(defaultBook.props.className).toContain('book-state-open');
 
     // 2. opening state
@@ -226,6 +227,23 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     const bookCover = findNodeByTestId(defaultBook, 'book-cover-3d');
     expect(bookCover).toBeDefined();
     expect(bookCover).not.toBeNull();
+
+    // 5. Verify Two-Page Spread structure: book-page-left & book-page-right
+    const leftPage = findNodeByTestId(defaultBook, 'book-page-left');
+    expect(leftPage).toBeDefined();
+    expect(leftPage).not.toBeNull();
+
+    const rightPage = findNodeByTestId(defaultBook, 'book-page-right');
+    expect(rightPage).toBeDefined();
+    expect(rightPage).not.toBeNull();
+
+    const popupCard = findNodeByTestId(defaultBook, 'popup-standup-card');
+    expect(popupCard).toBeDefined();
+    expect(popupCard).not.toBeNull();
+
+    const popupShadow = findNodeByTestId(defaultBook, 'popup-shadow-ground');
+    expect(popupShadow).toBeDefined();
+    expect(popupShadow).not.toBeNull();
   });
 
   it('supports contentStage (hidden, popping, visible, folding) and 3D front cover flap', () => {
@@ -261,6 +279,16 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     expect(defaultMain.props.style?.opacity).toBe(1);
     expect(defaultMain.props.style?.transform).toBe('none');
 
+    const defaultPopup = findNodeByTestId(defaultBook, 'popup-standup-card');
+    expect(defaultPopup).toBeDefined();
+    expect(defaultPopup.props['data-content-stage']).toBe('visible');
+    expect(defaultPopup.props.style?.transform).toBe('rotateX(0deg) scale(1)');
+    expect(defaultPopup.props.style?.opacity).toBe(1);
+
+    const defaultShadow = findNodeByTestId(defaultBook, 'popup-shadow-ground');
+    expect(defaultShadow).toBeDefined();
+    expect(defaultShadow.props.style?.opacity).toBe(0.6);
+
     // 2. contentStage = 'hidden' during Phase 1 opening
     const hiddenBook = VirtualLedgerBook({
       floorMap: mockFloorMap,
@@ -280,6 +308,17 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     expect(hiddenMain.props.style?.pointerEvents).toBe('none');
     expect(hiddenMain.props.style?.transform).toBe('translateY(20px) scale(0.95)');
 
+    const hiddenPopup = findNodeByTestId(hiddenBook, 'popup-standup-card');
+    expect(hiddenPopup).toBeDefined();
+    expect(hiddenPopup.props['data-content-stage']).toBe('hidden');
+    expect(hiddenPopup.props.style?.transform).toBe('rotateX(-90deg) scale(0.95)');
+    expect(hiddenPopup.props.style?.opacity).toBe(0);
+    expect(hiddenPopup.props.style?.pointerEvents).toBe('none');
+
+    const hiddenShadow = findNodeByTestId(hiddenBook, 'popup-shadow-ground');
+    expect(hiddenShadow).toBeDefined();
+    expect(hiddenShadow.props.style?.opacity).toBe(0);
+
     // 3. contentStage = 'popping' during Phase 2
     const poppingBook = VirtualLedgerBook({
       floorMap: mockFloorMap,
@@ -290,6 +329,15 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     const poppingMain = findNodeByTestId(poppingBook, 'virtual-ledger-book-main');
     expect(poppingMain.props['data-content-stage']).toBe('popping');
     expect(poppingMain.props.style?.animation).toContain('popUpContentRise');
+
+    const poppingPopup = findNodeByTestId(poppingBook, 'popup-standup-card');
+    expect(poppingPopup).toBeDefined();
+    expect(poppingPopup.props['data-content-stage']).toBe('popping');
+    expect(poppingPopup.props.style?.animation).toContain('popUpStandUp');
+
+    const poppingShadow = findNodeByTestId(poppingBook, 'popup-shadow-ground');
+    expect(poppingShadow).toBeDefined();
+    expect(poppingShadow.props.style?.animation).toContain('popupShadowSpread');
 
     // 4. contentStage = 'folding' during reverse transition
     const foldingBook = VirtualLedgerBook({
@@ -302,5 +350,16 @@ describe('Task 3: Virtual Ledger Book F04 Single-Page Component & Floor Tabs', (
     expect(foldingMain.props['data-content-stage']).toBe('folding');
     expect(foldingMain.props.style?.opacity).toBe(0);
     expect(foldingMain.props.style?.pointerEvents).toBe('none');
+
+    const foldingPopup = findNodeByTestId(foldingBook, 'popup-standup-card');
+    expect(foldingPopup).toBeDefined();
+    expect(foldingPopup.props['data-content-stage']).toBe('folding');
+    expect(foldingPopup.props.style?.transform).toBe('rotateX(-85deg) scale(0.95)');
+    expect(foldingPopup.props.style?.opacity).toBe(0);
+    expect(foldingPopup.props.style?.pointerEvents).toBe('none');
+
+    const foldingShadow = findNodeByTestId(foldingBook, 'popup-shadow-ground');
+    expect(foldingShadow).toBeDefined();
+    expect(foldingShadow.props.style?.opacity).toBe(0);
   });
 });

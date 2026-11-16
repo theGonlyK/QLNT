@@ -53,7 +53,7 @@ export const RoomDetailSinglePage: React.FC<RoomDetailSinglePageProps> = ({
 
   return (
     <div
-      className={`qlnt-room-detail-page flex flex-col h-full bg-amber-50/70 text-stone-800 rounded-lg shadow-inner overflow-hidden border border-stone-300 p-4 ${className}`.trim()}
+      className={`qlnt-room-detail-page flex flex-col h-full bg-amber-50/70 text-stone-800 rounded-lg shadow-inner overflow-hidden border border-stone-300 p-3 md:p-4 ${className}`.trim()}
       data-testid="room-detail-single-page"
       data-room-id={roomDetail.roomId}
       data-active-tab={currentTab}

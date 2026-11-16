@@ -962,7 +962,7 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
     const onCloseBook = vi.fn();
 
     // 1. Phase 1 Opening: contentStage = 'hidden'
-    // Panel f04-interactive-panel is completely hidden: opacity: 0, pointer-events: none, translateY(24px) scale(0.95)
+    // Panel f04-interactive-panel lies flat/hidden: opacity: 0, pointer-events: none, rotateX(-90deg) scale(0.95)
     const hiddenHtml = renderToStaticMarkup(
       React.createElement(LedgerOverlayHost, {
         isBookOpen: true,
@@ -996,10 +996,10 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
     expect(hiddenHtml).toMatch(/data-testid="f04-interactive-panel"[^>]*data-content-stage="hidden"/);
     expect(hiddenHtml).toContain('opacity:0');
     expect(hiddenHtml).toContain('pointer-events:none');
-    expect(hiddenHtml).toContain('translateY(24px) scale(0.95)');
+    expect(hiddenHtml).toContain('rotateX(-90deg)');
 
     // 2. Phase 2 Popping: contentStage = 'popping'
-    // Panel triggers 3D pop-up rise animation
+    // Panel triggers 3D popUpStandUp animation
     const poppingHtml = renderToStaticMarkup(
       React.createElement(LedgerOverlayHost, {
         isBookOpen: true,
@@ -1027,7 +1027,7 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
       })
     );
     expect(poppingHtml).toMatch(/data-testid="f04-interactive-panel"[^>]*data-content-stage="popping"/);
-    expect(poppingHtml).toContain('popUpContentRise');
+    expect(poppingHtml).toContain('popUpStandUp');
 
     // 3. Fully Visible: contentStage = 'visible'
     const visibleHtml = renderToStaticMarkup(
@@ -1059,6 +1059,7 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
     expect(visibleHtml).toMatch(/data-testid="f04-interactive-panel"[^>]*data-content-stage="visible"/);
     expect(visibleHtml).toContain('opacity:1');
     expect(visibleHtml).toContain('pointer-events:auto');
+    expect(visibleHtml).toContain('rotateX(0deg)');
 
     // 4. Reverse transition Stage 1: contentStage = 'folding'
     const foldingHtml = renderToStaticMarkup(
@@ -1088,13 +1089,13 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
       })
     );
     expect(foldingHtml).toMatch(/data-testid="f04-interactive-panel"[^>]*data-content-stage="folding"/);
-    expect(foldingHtml).toContain('popUpContentFold');
-    expect(foldingHtml).toContain('scale(0.96)');
+    expect(foldingHtml).toContain('popUpFoldDown');
+    expect(foldingHtml).toContain('rotateX(-90deg)');
 
     // 5. Test closeLedgerStagedWithTransition timer cycle:
-    // Stage 1 (0ms - 180ms): folding
-    // Stage 2 (180ms - 530ms): CLOSING
-    // After 530ms: CLOSED + onCloseBook()
+    // Stage 1 (0ms - 250ms): folding (gập bẹp nằm xuống 250ms)
+    // Stage 2 (250ms - 600ms): CLOSING (bìa sách gập về gáy 350ms)
+    // After 600ms: CLOSED + onCloseBook()
     vi.useFakeTimers();
     const onStageChange = vi.fn();
     const onAnimState = vi.fn();
@@ -1102,7 +1103,7 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
       onStageChange,
       onAnimState,
       onCloseBook,
-      180,
+      250,
       350
     );
 
@@ -1111,22 +1112,22 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
     expect(onAnimState).not.toHaveBeenCalled();
     expect(onCloseBook).not.toHaveBeenCalled();
 
-    // At t=100ms (inside stage 1): still folding, book not yet closing
-    vi.advanceTimersByTime(100);
+    // At t=150ms (inside stage 1): still folding, book not yet closing
+    vi.advanceTimersByTime(150);
     expect(onAnimState).not.toHaveBeenCalled();
     expect(onCloseBook).not.toHaveBeenCalled();
 
-    // At t=180ms (stage 1 completes -> stage 2 starts): book begins closing
-    vi.advanceTimersByTime(80);
+    // At t=250ms (stage 1 completes -> stage 2 starts): book begins closing
+    vi.advanceTimersByTime(100);
     expect(onAnimState).toHaveBeenCalledWith('CLOSING');
     expect(onCloseBook).not.toHaveBeenCalled();
 
-    // At t=400ms (inside stage 2): still closing
-    vi.advanceTimersByTime(220);
+    // At t=450ms (inside stage 2): still closing
+    vi.advanceTimersByTime(200);
     expect(onCloseBook).not.toHaveBeenCalled();
 
-    // At t=530ms (stage 2 completes: 180 + 350 = 530ms): marks CLOSED and calls onCloseBook
-    vi.advanceTimersByTime(130);
+    // At t=600ms (stage 2 completes: 250 + 350 = 600ms): marks CLOSED and calls onCloseBook
+    vi.advanceTimersByTime(150);
     expect(onAnimState).toHaveBeenCalledWith('CLOSED');
     expect(onCloseBook).toHaveBeenCalledTimes(1);
 

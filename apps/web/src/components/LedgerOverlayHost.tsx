@@ -64,15 +64,15 @@ export function closeLedgerWithTransition(
 
 /**
  * 2-Stage reverse transition when closing the ledger:
- * - Stage 1 (0ms - 180ms): Content panel collapses & fades out (folding).
- * - Stage 2 (180ms - 530ms): Book cover folds back to spine (closing).
- * - At 530ms: Book is CLOSED and parent unmount callback is called.
+ * - Stage 1 (0ms - 250ms): Pop-up panel folds down flat (folding).
+ * - Stage 2 (250ms - 600ms): Book cover folds back to spine (closing).
+ * - At 600ms: Book is CLOSED and parent unmount callback is called.
  */
 export function closeLedgerStagedWithTransition(
   onContentStageChange: (stage: 'folding') => void,
   onAnimStateChange: (state: 'CLOSING' | 'CLOSED') => void,
   onCloseComplete: () => void,
-  stage1FoldDurationMs = 180,
+  stage1FoldDurationMs = 250,
   stage2BookCloseDurationMs = 350
 ): { clear: () => void } {
   onContentStageChange('folding');
@@ -172,7 +172,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
 
       openTimer2Ref.current = setTimeout(() => {
         setContentStage('visible');
-      }, 950);
+      }, 1050);
     } else {
       setAnimationState('CLOSED');
       setContentStage('hidden');
@@ -206,38 +206,49 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
       (stage) => setContentStage(stage),
       (animState) => setAnimationState(animState),
       () => onCloseBook(),
-      180,
+      250,
       350
     );
   };
 
   const getPanelStageStyle = (): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      transformOrigin: 'bottom center',
+      transformStyle: 'preserve-3d',
+    };
+
     if (contentStage === 'hidden') {
       return {
+        ...base,
         opacity: 0,
         pointerEvents: 'none',
-        transform: 'translateY(24px) scale(0.95)',
+        transform: 'rotateX(-90deg) scale(0.95)',
         transition: 'none',
       };
     }
     if (contentStage === 'popping') {
       return {
-        animation: 'popUpContentRise 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        ...base,
+        animation: 'popUpStandUp 500ms cubic-bezier(0.16, 1.2, 0.3, 1) forwards',
       };
     }
     if (contentStage === 'folding') {
       return {
+        ...base,
         opacity: 0,
         pointerEvents: 'none',
-        transform: 'scale(0.96)',
-        animation: 'popUpContentFold 180ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
+        transform: 'rotateX(-90deg) scale(0.95)',
+        animation: 'popUpFoldDown 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
       };
     }
     // visible
     return {
+      ...base,
       opacity: 1,
-      transform: 'none',
+      transform: 'rotateX(0deg) scale(1)',
       pointerEvents: 'auto',
+      boxShadow:
+        '0 25px 40px -10px rgba(0, 0, 0, 0.35), 0 12px 18px -6px rgba(0, 0, 0, 0.2)',
     };
   };
 
@@ -321,15 +332,20 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 flex justify-center bg-stone-950/75 p-2 md:p-4 overflow-y-auto ${
+      className={`fixed inset-0 flex justify-center p-2 md:p-4 overflow-y-auto ${
         animationState === 'OPENING'
-          ? 'ledger-overlay-opening backdrop-blur-sm'
+          ? 'ledger-overlay-opening backdrop-blur-md'
           : animationState === 'CLOSING'
             ? 'ledger-overlay-closing'
-            : 'ledger-overlay-open backdrop-blur-sm'
+            : 'ledger-overlay-open backdrop-blur-md'
       }`}
       style={{
         zIndex: 20,
+        background:
+          'radial-gradient(ellipse at 50% 12%, rgba(55, 45, 36, 0.88) 0%, rgba(24, 19, 16, 0.94) 65%, rgba(12, 10, 8, 0.98) 100%)',
+        boxShadow: 'inset 0 30px 90px rgba(0, 0, 0, 0.7)',
+        perspective: '1600px',
+        transformStyle: 'preserve-3d',
         transition:
           'opacity 450ms ease, backdrop-filter 450ms ease, -webkit-backdrop-filter 450ms ease',
       }}
@@ -355,15 +371,15 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
           }
           100% {
             opacity: 1;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
           }
         }
         @keyframes ledgerBackdropFadeOut {
           0% {
             opacity: 1;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
           }
           100% {
             opacity: 0;
@@ -380,31 +396,55 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
         }
         .ledger-overlay-open {
           opacity: 1;
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        }
+        @keyframes popUpStandUp {
+          0% {
+            opacity: 0;
+            transform: rotateX(-90deg) scale(0.92);
+          }
+          65% {
+            opacity: 1;
+            transform: rotateX(8deg) scale(1.02);
+          }
+          100% {
+            opacity: 1;
+            transform: rotateX(0deg) scale(1);
+          }
+        }
+        @keyframes popUpFoldDown {
+          0% {
+            opacity: 1;
+            transform: rotateX(0deg) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: rotateX(-90deg) scale(0.92);
+          }
         }
         @keyframes popUpContentRise {
           0% {
             opacity: 0;
-            transform: translateY(24px) scale(0.95);
+            transform: rotateX(-90deg) scale(0.92);
           }
-          70% {
+          65% {
             opacity: 1;
-            transform: translateY(-4px) scale(1.01);
+            transform: rotateX(8deg) scale(1.02);
           }
           100% {
             opacity: 1;
-            transform: translateY(0px) scale(1);
+            transform: rotateX(0deg) scale(1);
           }
         }
         @keyframes popUpContentFold {
           0% {
             opacity: 1;
-            transform: translateY(0px) scale(1);
+            transform: rotateX(0deg) scale(1);
           }
           100% {
             opacity: 0;
-            transform: scale(0.96) translateY(12px);
+            transform: rotateX(-90deg) scale(0.92);
           }
         }
       `}</style>
@@ -412,6 +452,9 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
         className={`flex flex-col w-full gap-3 my-auto ${
           isMobileViewport ? 'max-w-[390px]' : 'max-w-5xl'
         }`}
+        style={{
+          transformStyle: 'preserve-3d',
+        }}
       >
         {/* Core 2D Virtual Ledger Book (@qlnt/renderer-2d) */}
         <div className="min-h-[420px]">
@@ -439,7 +482,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
         {/* Interactive F04 Controls Panel for the Active Room */}
         {roomDetail && (
           <div
-            className="bg-amber-50 border-2 border-amber-900/30 rounded-xl p-3 md:p-4 shadow-xl text-stone-900 space-y-3"
+            className="popup-standup-card bg-amber-50 border-2 border-amber-900/30 rounded-xl p-3 md:p-4 shadow-2xl text-stone-900 space-y-3"
             data-testid="f04-interactive-panel"
             data-content-stage={contentStage}
             style={getPanelStageStyle()}
