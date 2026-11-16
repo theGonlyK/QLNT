@@ -15,6 +15,8 @@ import { GAME_COPYWRITING } from '../copywriting/gameCopywriting';
 import { HANOI_MOTEL_BANK_INFO } from '../seed/hanoiMotelSeed';
 import { renderVietQRSvgString } from '../utils/vietqrLocal';
 
+export type LedgerContentStage = 'hidden' | 'popping' | 'visible' | 'folding';
+
 export interface LedgerOverlayHostProps {
   isBookOpen: boolean;
   currentFloor: number;
@@ -28,7 +30,9 @@ export interface LedgerOverlayHostProps {
   landlordReputation: number;
   isMobileViewport?: boolean;
   initialAnimationState?: 'OPENING' | 'OPEN' | 'CLOSING' | 'CLOSED';
+  initialContentStage?: LedgerContentStage;
   onAnimationStateChange?: (state: 'OPENING' | 'OPEN' | 'CLOSING' | 'CLOSED') => void;
+  onContentStageChange?: (stage: LedgerContentStage) => void;
   onFlipFloor: (floorNumber: number) => void;
   onOpenRoomDetail: (roomId: string) => void;
   onSwitchTab: (roomId: string, tab: RoomDetailTab) => void;
@@ -43,7 +47,7 @@ export interface LedgerOverlayHostProps {
 }
 
 /**
- * Intercept closing action to execute the 450ms 3D book folding animation
+ * Intercept closing action to execute the legacy single-step 3D book folding animation
  * before calling parent's unmount/close callback.
  */
 export function closeLedgerWithTransition(
@@ -56,6 +60,36 @@ export function closeLedgerWithTransition(
     onStateChange('CLOSED');
     onCloseComplete();
   }, durationMs);
+}
+
+/**
+ * 2-Stage reverse transition when closing the ledger:
+ * - Stage 1 (0ms - 180ms): Content panel collapses & fades out (folding).
+ * - Stage 2 (180ms - 530ms): Book cover folds back to spine (closing).
+ * - At 530ms: Book is CLOSED and parent unmount callback is called.
+ */
+export function closeLedgerStagedWithTransition(
+  onContentStageChange: (stage: 'folding') => void,
+  onAnimStateChange: (state: 'CLOSING' | 'CLOSED') => void,
+  onCloseComplete: () => void,
+  stage1FoldDurationMs = 180,
+  stage2BookCloseDurationMs = 350
+): { clear: () => void } {
+  onContentStageChange('folding');
+  const timer1 = setTimeout(() => {
+    onAnimStateChange('CLOSING');
+  }, stage1FoldDurationMs);
+  const timer2 = setTimeout(() => {
+    onAnimStateChange('CLOSED');
+    onCloseComplete();
+  }, stage1FoldDurationMs + stage2BookCloseDurationMs);
+
+  return {
+    clear: () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    },
+  };
 }
 
 const SAMPLE_LOCAL_BILL_DATA_URL =
@@ -77,7 +111,9 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
   landlordReputation,
   isMobileViewport = false,
   initialAnimationState,
+  initialContentStage,
   onAnimationStateChange,
+  onContentStageChange,
   onFlipFloor,
   onOpenRoomDetail,
   onSwitchTab,
@@ -96,45 +132,113 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
     return initialAnimationState ?? (isBookOpen ? 'OPENING' : 'CLOSED');
   });
 
-  const closeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [contentStage, setContentStage] = useState<LedgerContentStage>(() => {
+    if (initialContentStage) return initialContentStage;
+    if (!isBookOpen) return 'hidden';
+    if (initialAnimationState === 'OPEN') return 'visible';
+    if (initialAnimationState === 'CLOSING') return 'folding';
+    return 'hidden';
+  });
+
+  const openTimer1Ref = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openTimer2Ref = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stagedCloseRef = React.useRef<{ clear: () => void } | null>(null);
+  const hasMountedRef = React.useRef(false);
 
   useEffect(() => {
     onAnimationStateChange?.(animationState);
   }, [animationState, onAnimationStateChange]);
 
   useEffect(() => {
-    let openTimer: ReturnType<typeof setTimeout> | null = null;
-    if (isBookOpen) {
-      if (animationState === 'CLOSED') {
-        setAnimationState('OPENING');
+    onContentStageChange?.(contentStage);
+  }, [contentStage, onContentStageChange]);
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      if (initialAnimationState === 'OPEN' || initialAnimationState === 'CLOSING') {
+        return;
       }
-      openTimer = setTimeout(() => {
+    }
+
+    if (isBookOpen) {
+      setAnimationState('OPENING');
+      setContentStage('hidden');
+
+      openTimer1Ref.current = setTimeout(() => {
         setAnimationState('OPEN');
-      }, 650);
+        setContentStage('popping');
+      }, 550);
+
+      openTimer2Ref.current = setTimeout(() => {
+        setContentStage('visible');
+      }, 950);
     } else {
       setAnimationState('CLOSED');
+      setContentStage('hidden');
     }
+
     return () => {
-      if (openTimer) clearTimeout(openTimer);
+      if (openTimer1Ref.current) clearTimeout(openTimer1Ref.current);
+      if (openTimer2Ref.current) clearTimeout(openTimer2Ref.current);
     };
   }, [isBookOpen]);
 
   useEffect(() => {
     return () => {
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
+      if (stagedCloseRef.current) {
+        stagedCloseRef.current.clear();
       }
     };
   }, []);
 
   const handleInterceptCloseBook = () => {
-    if (animationState === 'CLOSING' || animationState === 'CLOSED') return;
-    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-    closeTimerRef.current = closeLedgerWithTransition(
-      (s) => setAnimationState(s),
+    if (
+      animationState === 'CLOSING' ||
+      animationState === 'CLOSED' ||
+      contentStage === 'folding'
+    ) {
+      return;
+    }
+    if (stagedCloseRef.current) stagedCloseRef.current.clear();
+
+    stagedCloseRef.current = closeLedgerStagedWithTransition(
+      (stage) => setContentStage(stage),
+      (animState) => setAnimationState(animState),
       () => onCloseBook(),
-      450
+      180,
+      350
     );
+  };
+
+  const getPanelStageStyle = (): React.CSSProperties => {
+    if (contentStage === 'hidden') {
+      return {
+        opacity: 0,
+        pointerEvents: 'none',
+        transform: 'translateY(24px) scale(0.95)',
+        transition: 'none',
+      };
+    }
+    if (contentStage === 'popping') {
+      return {
+        animation: 'popUpContentRise 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
+      };
+    }
+    if (contentStage === 'folding') {
+      return {
+        opacity: 0,
+        pointerEvents: 'none',
+        transform: 'scale(0.96)',
+        animation: 'popUpContentFold 180ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
+      };
+    }
+    // visible
+    return {
+      opacity: 1,
+      transform: 'none',
+      pointerEvents: 'auto',
+    };
   };
 
   const [electricInput, setElectricInput] = useState<number>(
@@ -231,6 +335,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
       }}
       data-testid="ledger-overlay-host"
       data-animation-state={animationState}
+      data-content-stage={contentStage}
       role="dialog"
       aria-modal="true"
       aria-label="Lớp phủ Sổ Quản lý Ảo F04"
@@ -240,7 +345,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
         }
       }}
     >
-      {/* Embedded CSS for smooth backdrop fade during opening/closing */}
+      {/* Embedded CSS for smooth backdrop fade during opening/closing and 3D Pop-up */}
       <style>{`
         @keyframes ledgerBackdropFadeIn {
           0% {
@@ -267,16 +372,40 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
           }
         }
         .ledger-overlay-opening {
-          animation: ledgerBackdropFadeIn 650ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: ledgerBackdropFadeIn 550ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .ledger-overlay-closing {
-          animation: ledgerBackdropFadeOut 450ms cubic-bezier(0.4, 0, 1, 1) forwards;
+          animation: ledgerBackdropFadeOut 350ms cubic-bezier(0.4, 0, 1, 1) forwards;
           pointer-events: none;
         }
         .ledger-overlay-open {
           opacity: 1;
           backdrop-filter: blur(4px);
           -webkit-backdrop-filter: blur(4px);
+        }
+        @keyframes popUpContentRise {
+          0% {
+            opacity: 0;
+            transform: translateY(24px) scale(0.95);
+          }
+          70% {
+            opacity: 1;
+            transform: translateY(-4px) scale(1.01);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0px) scale(1);
+          }
+        }
+        @keyframes popUpContentFold {
+          0% {
+            opacity: 1;
+            transform: translateY(0px) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(0.96) translateY(12px);
+          }
         }
       `}</style>
       <div
@@ -288,6 +417,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
         <div className="min-h-[420px]">
           <VirtualLedgerBook
             animationState={bookAnimState}
+            contentStage={contentStage}
             floorMap={floorMap}
             totalFloors={totalFloors}
             activeFloor={currentFloor}
@@ -311,6 +441,8 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
           <div
             className="bg-amber-50 border-2 border-amber-900/30 rounded-xl p-3 md:p-4 shadow-xl text-stone-900 space-y-3"
             data-testid="f04-interactive-panel"
+            data-content-stage={contentStage}
+            style={getPanelStageStyle()}
           >
             {/* Page 1 Controls: Meter Preview/Commit + VietQR Offline + Local Bill Upload + 1-Touch Approve */}
             {activeTab === 'PAGE_1_BILLING' && (

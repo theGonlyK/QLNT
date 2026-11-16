@@ -11,6 +11,7 @@ import { Canvas3DStage } from '../src/components/Canvas3DStage';
 import {
   LedgerOverlayHost,
   closeLedgerWithTransition,
+  closeLedgerStagedWithTransition,
 } from '../src/components/LedgerOverlayHost';
 import { LoginScreen } from '../src/components/LoginScreen';
 
@@ -950,6 +951,186 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
     expect(onCloseBook).toHaveBeenCalledTimes(1);
 
     clearTimeout(timer);
+    vi.useRealTimers();
+  });
+
+  it('coordinates 2-stage transition in LedgerOverlayHost: book opens first (hidden), interactive panel pops up second (popping -> visible), folds on close', async () => {
+    const controller = await createInitializedController();
+    const p101 = controller.getRooms().find((r) => r.room_number === 'P101')!;
+    const floorMap = controller.getFloorMapDTO(1);
+    const roomDetail = controller.getRoomDetailDTO(p101.id)!;
+    const onCloseBook = vi.fn();
+
+    // 1. Phase 1 Opening: contentStage = 'hidden'
+    // Panel f04-interactive-panel is completely hidden: opacity: 0, pointer-events: none, translateY(24px) scale(0.95)
+    const hiddenHtml = renderToStaticMarkup(
+      React.createElement(LedgerOverlayHost, {
+        isBookOpen: true,
+        currentFloor: 1,
+        floorMap,
+        roomDetail,
+        activeTab: 'PAGE_1_BILLING',
+        previewState: null,
+        auditLogs: [],
+        tenantRewardPoints: 0,
+        landlordReputation: 4.8,
+        onFlipFloor: vi.fn(),
+        onOpenRoomDetail: vi.fn(),
+        onSwitchTab: vi.fn(),
+        onPreviewBilling: vi.fn(),
+        onCommitBillingReading: vi.fn(),
+        onUploadLocalBillImage: vi.fn(),
+        onApproveBillOneTouch: vi.fn(),
+        onReportDeviceBroken: vi.fn(),
+        onResolveDeviceMaintenance: vi.fn(),
+        onCloseRoomDetail: vi.fn(),
+        onCloseBook,
+        initialAnimationState: 'OPENING',
+        initialContentStage: 'hidden',
+      })
+    );
+    expect(hiddenHtml).toContain('data-testid="ledger-overlay-host"');
+    expect(hiddenHtml).toContain('data-animation-state="OPENING"');
+    expect(hiddenHtml).toContain('data-content-stage="hidden"');
+    expect(hiddenHtml).toContain('data-testid="f04-interactive-panel"');
+    expect(hiddenHtml).toMatch(/data-testid="f04-interactive-panel"[^>]*data-content-stage="hidden"/);
+    expect(hiddenHtml).toContain('opacity:0');
+    expect(hiddenHtml).toContain('pointer-events:none');
+    expect(hiddenHtml).toContain('translateY(24px) scale(0.95)');
+
+    // 2. Phase 2 Popping: contentStage = 'popping'
+    // Panel triggers 3D pop-up rise animation
+    const poppingHtml = renderToStaticMarkup(
+      React.createElement(LedgerOverlayHost, {
+        isBookOpen: true,
+        currentFloor: 1,
+        floorMap,
+        roomDetail,
+        activeTab: 'PAGE_1_BILLING',
+        previewState: null,
+        auditLogs: [],
+        tenantRewardPoints: 0,
+        landlordReputation: 4.8,
+        onFlipFloor: vi.fn(),
+        onOpenRoomDetail: vi.fn(),
+        onSwitchTab: vi.fn(),
+        onPreviewBilling: vi.fn(),
+        onCommitBillingReading: vi.fn(),
+        onUploadLocalBillImage: vi.fn(),
+        onApproveBillOneTouch: vi.fn(),
+        onReportDeviceBroken: vi.fn(),
+        onResolveDeviceMaintenance: vi.fn(),
+        onCloseRoomDetail: vi.fn(),
+        onCloseBook,
+        initialAnimationState: 'OPEN',
+        initialContentStage: 'popping',
+      })
+    );
+    expect(poppingHtml).toMatch(/data-testid="f04-interactive-panel"[^>]*data-content-stage="popping"/);
+    expect(poppingHtml).toContain('popUpContentRise');
+
+    // 3. Fully Visible: contentStage = 'visible'
+    const visibleHtml = renderToStaticMarkup(
+      React.createElement(LedgerOverlayHost, {
+        isBookOpen: true,
+        currentFloor: 1,
+        floorMap,
+        roomDetail,
+        activeTab: 'PAGE_1_BILLING',
+        previewState: null,
+        auditLogs: [],
+        tenantRewardPoints: 0,
+        landlordReputation: 4.8,
+        onFlipFloor: vi.fn(),
+        onOpenRoomDetail: vi.fn(),
+        onSwitchTab: vi.fn(),
+        onPreviewBilling: vi.fn(),
+        onCommitBillingReading: vi.fn(),
+        onUploadLocalBillImage: vi.fn(),
+        onApproveBillOneTouch: vi.fn(),
+        onReportDeviceBroken: vi.fn(),
+        onResolveDeviceMaintenance: vi.fn(),
+        onCloseRoomDetail: vi.fn(),
+        onCloseBook,
+        initialAnimationState: 'OPEN',
+        initialContentStage: 'visible',
+      })
+    );
+    expect(visibleHtml).toMatch(/data-testid="f04-interactive-panel"[^>]*data-content-stage="visible"/);
+    expect(visibleHtml).toContain('opacity:1');
+    expect(visibleHtml).toContain('pointer-events:auto');
+
+    // 4. Reverse transition Stage 1: contentStage = 'folding'
+    const foldingHtml = renderToStaticMarkup(
+      React.createElement(LedgerOverlayHost, {
+        isBookOpen: true,
+        currentFloor: 1,
+        floorMap,
+        roomDetail,
+        activeTab: 'PAGE_1_BILLING',
+        previewState: null,
+        auditLogs: [],
+        tenantRewardPoints: 0,
+        landlordReputation: 4.8,
+        onFlipFloor: vi.fn(),
+        onOpenRoomDetail: vi.fn(),
+        onSwitchTab: vi.fn(),
+        onPreviewBilling: vi.fn(),
+        onCommitBillingReading: vi.fn(),
+        onUploadLocalBillImage: vi.fn(),
+        onApproveBillOneTouch: vi.fn(),
+        onReportDeviceBroken: vi.fn(),
+        onResolveDeviceMaintenance: vi.fn(),
+        onCloseRoomDetail: vi.fn(),
+        onCloseBook,
+        initialAnimationState: 'OPEN',
+        initialContentStage: 'folding',
+      })
+    );
+    expect(foldingHtml).toMatch(/data-testid="f04-interactive-panel"[^>]*data-content-stage="folding"/);
+    expect(foldingHtml).toContain('popUpContentFold');
+    expect(foldingHtml).toContain('scale(0.96)');
+
+    // 5. Test closeLedgerStagedWithTransition timer cycle:
+    // Stage 1 (0ms - 180ms): folding
+    // Stage 2 (180ms - 530ms): CLOSING
+    // After 530ms: CLOSED + onCloseBook()
+    vi.useFakeTimers();
+    const onStageChange = vi.fn();
+    const onAnimState = vi.fn();
+    const stagedCloser = closeLedgerStagedWithTransition(
+      onStageChange,
+      onAnimState,
+      onCloseBook,
+      180,
+      350
+    );
+
+    // Immediate t=0ms
+    expect(onStageChange).toHaveBeenCalledWith('folding');
+    expect(onAnimState).not.toHaveBeenCalled();
+    expect(onCloseBook).not.toHaveBeenCalled();
+
+    // At t=100ms (inside stage 1): still folding, book not yet closing
+    vi.advanceTimersByTime(100);
+    expect(onAnimState).not.toHaveBeenCalled();
+    expect(onCloseBook).not.toHaveBeenCalled();
+
+    // At t=180ms (stage 1 completes -> stage 2 starts): book begins closing
+    vi.advanceTimersByTime(80);
+    expect(onAnimState).toHaveBeenCalledWith('CLOSING');
+    expect(onCloseBook).not.toHaveBeenCalled();
+
+    // At t=400ms (inside stage 2): still closing
+    vi.advanceTimersByTime(220);
+    expect(onCloseBook).not.toHaveBeenCalled();
+
+    // At t=530ms (stage 2 completes: 180 + 350 = 530ms): marks CLOSED and calls onCloseBook
+    vi.advanceTimersByTime(130);
+    expect(onAnimState).toHaveBeenCalledWith('CLOSED');
+    expect(onCloseBook).toHaveBeenCalledTimes(1);
+
+    stagedCloser.clear();
     vi.useRealTimers();
   });
 });
