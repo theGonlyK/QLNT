@@ -576,6 +576,13 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
       fullPage: true,
     });
 
+    // Save screenshot of 3D Floor Cutaway with electric lights illuminating rooms
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '22-3d-floor-cutaway-electric-lit-rooms.png'),
+      fullPage: true,
+    });
+    copyScreenshotArtifacts('22-3d-floor-cutaway-electric-lit-rooms.png');
+
     // Project P201 notice badge to screen coordinates and hover/click it
     const p201BadgePos = await page.evaluate(() => {
       const r = (window as unknown as { __QLNT_RENDERER__?: any }).__QLNT_RENDERER__;
