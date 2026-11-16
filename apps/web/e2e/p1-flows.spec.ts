@@ -3,9 +3,23 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 const SCREENSHOT_DIR = path.resolve(process.cwd(), 'e2e-results/screenshots');
+const RENDERS_DIR = path.resolve(process.cwd(), '../../scratch/renders');
+const ARTIFACT_DIR = '/Users/minhntv/.gemini/antigravity-cli/brain/f54f2f92-542a-4f97-90c2-617cf6604c91';
+
+function copyScreenshotArtifacts(fileName: string) {
+  const src = path.join(SCREENSHOT_DIR, fileName);
+  if (!fs.existsSync(src)) return;
+  if (fs.existsSync(RENDERS_DIR)) {
+    fs.copyFileSync(src, path.join(RENDERS_DIR, fileName));
+  }
+  if (fs.existsSync(ARTIFACT_DIR)) {
+    fs.copyFileSync(src, path.join(ARTIFACT_DIR, fileName));
+  }
+}
 
 test.beforeAll(() => {
   fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+  fs.mkdirSync(RENDERS_DIR, { recursive: true });
 });
 
 test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () => {
@@ -954,7 +968,7 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     expect(externalRequests).toEqual([]);
   });
 
-  test('TC-P1-14-3D-BOOK-POPUP-TRANSITION: Mo So Quan Ly F04 -> Hoat Anh 3D Pop-up Book Open (Perspective, Ban Le & Gay So 3D) -> Xem Day Du Mat Bang Tang -> Gap So (3D) Smooth Folding Unmount', async ({
+  test('TC-P1-14-3D-BOOK-POPUP-TRANSITION: Mo So Quan Ly F04 -> Hoat Anh 3D Pop-up Book Open (Perspective, Ban Le & Gay So 3D) -> Chuyen Canh 2 Giai Doan Tuan Tu (Sach Mo Truoc -> Cua So Thong Tin Bung No Sau) -> Gap So (3D) Smooth Folding Unmount', async ({
     page,
   }) => {
     const consoleErrors: string[] = [];
@@ -988,7 +1002,7 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     // 1. Initial State: Ledger book overlay is NOT present
     await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0);
 
-    // 2. Click "Mở Sổ Quản Lý F04" HUD button to initiate 3D book opening
+    // 2. Click "Mở Sổ Quản Lý F04" HUD button to initiate 3D book opening (Floor Map view)
     const openBookBtn = page.getByTestId('open-ledger-book-btn');
     await expect(openBookBtn).toBeVisible();
     await openBookBtn.click();
@@ -997,21 +1011,25 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     const overlayHost = page.getByTestId('ledger-overlay-host');
     await expect(overlayHost).toBeVisible();
 
-    // Check 3D perspective / hinge structure and cover/spine
+    // Check 3D perspective / hinge structure and cover/spine/flap
     const virtualBook = page.getByTestId('virtual-ledger-book');
     await expect(virtualBook).toBeVisible();
     await expect(page.getByTestId('book-cover-3d')).toBeVisible();
     await expect(page.getByTestId('book-spine-crease')).toBeVisible();
+    await expect(page.getByTestId('book-front-cover-flap')).toBeVisible();
 
     // Capture screenshot: 12-3d-book-open-animation.png during transition
     await page.screenshot({
       path: path.join(SCREENSHOT_DIR, '12-3d-book-open-animation.png'),
       fullPage: true,
     });
+    copyScreenshotArtifacts('12-3d-book-open-animation.png');
 
-    // 4. Verify completion to OPEN state after 650ms animation
+    // 4. Verify completion to OPEN state after animation
     await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPEN', { timeout: 3000 });
+    await expect(overlayHost).toHaveAttribute('data-content-stage', 'visible', { timeout: 3000 });
     await expect(virtualBook).toHaveAttribute('data-animation-state', 'open');
+    await expect(virtualBook).toHaveAttribute('data-content-stage', 'visible');
     await expect(virtualBook).toHaveAttribute('data-mode', 'floor-map');
 
     // Verify 3D CSS perspective styles applied on the book container
@@ -1037,6 +1055,7 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
       path: path.join(SCREENSHOT_DIR, '13-3d-book-opened-full-ledger.png'),
       fullPage: true,
     });
+    copyScreenshotArtifacts('13-3d-book-opened-full-ledger.png');
 
     // 5. Test Gập Sổ (3D) folding transition and smooth unmount
     const closeBookBtn = page.getByTestId('close-ledger-book-btn');
@@ -1044,12 +1063,87 @@ test.describe('QLNT Prototype P1 — Playwright Browser E2E (TC-P1-01..12)', () 
     await expect(closeBookBtn).toContainText('Gập Sổ (3D)');
 
     await closeBookBtn.click();
+    await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0, { timeout: 3000 });
 
-    // Verify CLOSING animation state is triggered
-    await expect(overlayHost).toHaveAttribute('data-animation-state', 'CLOSING');
+    // 6. Test 2-Stage Sequential Transition with Active Room Detail (Click room P101 from Drawer):
+    // Stage 1 (0ms - 550ms): Book opening, information panel completely hidden
+    const cardP101 = page.getByTestId('stage-room-card-P101');
+    await expect(cardP101).toBeVisible();
+    await cardP101.click();
+
+    // Verify overlay mounted in OPENING state with contentStage hidden
+    await expect(overlayHost).toBeVisible();
+
+    // Check Stage 1 at t=200ms-250ms: Sách đang mở, panel thông tin đang ẩn
+    await page.waitForTimeout(220);
+    await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPENING');
+    await expect(overlayHost).toHaveAttribute('data-content-stage', 'hidden');
+    await expect(virtualBook).toHaveAttribute('data-animation-state', 'opening');
+    await expect(virtualBook).toHaveAttribute('data-content-stage', 'hidden');
+
+    const panel = page.getByTestId('f04-interactive-panel');
+    await expect(panel).toBeAttached();
+    await expect(panel).toHaveAttribute('data-content-stage', 'hidden');
+
+    // Verify panel opacity is 0 and pointer-events none during Stage 1
+    const panelStage1Style = await panel.evaluate((el) => {
+      const computed = window.getComputedStyle(el);
+      return {
+        opacity: computed.opacity,
+        pointerEvents: computed.pointerEvents,
+      };
+    });
+    expect(Number(panelStage1Style.opacity)).toBe(0);
+    expect(panelStage1Style.pointerEvents).toBe('none');
+
+    // Capture screenshot: 14-3d-book-stage1-opening.png (Sách đang mở bìa 3D, panel thông tin ẩn hoàn toàn)
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '14-3d-book-stage1-opening.png'),
+      fullPage: true,
+    });
+    copyScreenshotArtifacts('14-3d-book-stage1-opening.png');
+
+    // 7. Stage 2 (after 850ms - 950ms): Book fully open, information panel pops up & revealed
+    await expect(overlayHost).toHaveAttribute('data-animation-state', 'OPEN', { timeout: 3000 });
+    await expect(overlayHost).toHaveAttribute('data-content-stage', 'visible', { timeout: 3000 });
+    await expect(virtualBook).toHaveAttribute('data-animation-state', 'open');
+    await expect(virtualBook).toHaveAttribute('data-content-stage', 'visible');
+    await expect(panel).toHaveAttribute('data-content-stage', 'visible');
+    await expect(panel).toBeVisible();
+
+    // Verify panel opacity is 1 and controls are interactive
+    const panelStage2Style = await panel.evaluate((el) => {
+      const computed = window.getComputedStyle(el);
+      return {
+        opacity: computed.opacity,
+        pointerEvents: computed.pointerEvents,
+      };
+    });
+    expect(Number(panelStage2Style.opacity)).toBe(1);
+    expect(panelStage2Style.pointerEvents).toBe('auto');
+
+    await expect(page.getByTestId('f04-page-1-controls')).toBeVisible();
+    await expect(page.getByTestId('room-detail-single-page')).toContainText('P101');
+
+    // Capture screenshot: 15-3d-book-stage2-popup-revealed.png (Full 3D book open with interactive panel pop-up)
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, '15-3d-book-stage2-popup-revealed.png'),
+      fullPage: true,
+    });
+    copyScreenshotArtifacts('15-3d-book-stage2-popup-revealed.png');
+
+    // 8. Test 2-Stage Reverse Closing: panel collapses first -> book closes -> overlay unmounts
+    const closeRoomBookBtn = page.getByTestId('close-ledger-book-btn');
+    await expect(closeRoomBookBtn).toBeVisible();
+    await expect(closeRoomBookBtn).toContainText('Gập Sổ (3D)');
+    await closeRoomBookBtn.scrollIntoViewIfNeeded();
+    await closeRoomBookBtn.click();
+
+    // Verify reverse closing triggers CLOSING animation state
+    await expect(overlayHost).toHaveAttribute('data-animation-state', 'CLOSING', { timeout: 1000 });
     await expect(virtualBook).toHaveAttribute('data-animation-state', 'closing');
 
-    // Verify complete smooth unmount after 450ms fold animation
+    // Verify complete smooth unmount after reverse transition (530ms total)
     await expect(page.getByTestId('ledger-overlay-host')).toHaveCount(0, { timeout: 3000 });
 
     // Verify returned cleanly to 3D Stage

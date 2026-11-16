@@ -321,7 +321,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 flex items-center justify-center bg-stone-950/75 p-2 md:p-4 overflow-y-auto ${
+      className={`fixed inset-0 flex justify-center bg-stone-950/75 p-2 md:p-4 overflow-y-auto ${
         animationState === 'OPENING'
           ? 'ledger-overlay-opening backdrop-blur-sm'
           : animationState === 'CLOSING'
@@ -409,7 +409,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
         }
       `}</style>
       <div
-        className={`flex flex-col w-full gap-3 ${
+        className={`flex flex-col w-full gap-3 my-auto ${
           isMobileViewport ? 'max-w-[390px]' : 'max-w-5xl'
         }`}
       >
