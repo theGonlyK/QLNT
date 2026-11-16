@@ -174,11 +174,11 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
       openTimer1Ref.current = setTimeout(() => {
         setAnimationState('OPEN');
         setContentStage('popping');
-      }, 550);
+      }, 1400);
 
       openTimer2Ref.current = setTimeout(() => {
         setContentStage('visible');
-      }, 1050);
+      }, 2100);
     } else {
       setAnimationState('CLOSED');
       setContentStage('hidden');
@@ -214,7 +214,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
     }
     pageTurnTimerRef.current = setTimeout(() => {
       setIsPageTurning(false);
-    }, 420);
+    }, 750);
 
     return () => {
       if (pageTurnTimerRef.current) {
@@ -271,7 +271,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
     if (contentStage === 'popping') {
       return {
         ...base,
-        animation: 'popUpStandUp 500ms cubic-bezier(0.16, 1.2, 0.3, 1) forwards',
+        animation: 'popUpStandUp 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards',
       };
     }
     if (contentStage === 'folding') {
@@ -430,7 +430,7 @@ export const LedgerOverlayHost: React.FC<LedgerOverlayHostProps> = ({
           }
         }
         .ledger-overlay-opening {
-          animation: ledgerBackdropFadeIn 550ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation: ledgerBackdropFadeIn 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .ledger-overlay-closing {
           animation: ledgerBackdropFadeOut 350ms cubic-bezier(0.4, 0, 1, 1) forwards;

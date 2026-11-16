@@ -874,6 +874,8 @@ describe('UI & Mobile 390x844 Responsive Integration', () => {
     expect(openHtml).toContain('ledger-overlay-open');
     expect(openHtml).toContain('data-animation-state="open"');
     expect(openHtml).toContain('book-state-open');
+    expect(openHtml).toContain('rotateX(0deg) rotateY(0deg)');
+    expect(openHtml).toContain('transform-origin:center center');
 
     // 3. Closing state -> smoothly folds book back, fades backdrop, does not abruptly unmount
     const closingHtml = renderToStaticMarkup(
