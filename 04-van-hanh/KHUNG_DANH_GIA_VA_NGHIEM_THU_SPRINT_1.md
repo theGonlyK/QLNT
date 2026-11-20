@@ -8,7 +8,7 @@
   - `3.DOC_AI/quan-tri/MO_HINH_VAN_HANH.md` (Quy định Cổng G1 — Yêu cầu & Thiết kế sẵn sàng)
   - `3.DOC_AI/quan-tri/RULES_CORE.md` (Quy tắc 1–10)
   - `01-quan-ly/DECISIONS.md` (`QLNT-D001` $\rightarrow$ `QLNT-D015`)
-  - `01-quan-ly/HO_SO_DIEU_PHOI_SPRINT_1_VA_QUY_MO_HA_TANG.md`
+  - `04-van-hanh/lich-su/ho-so-thuc-thi-chi-tiet/HO_SO_DIEU_PHOI_SPRINT_1_VA_QUY_MO_HA_TANG.md`
 
 ---
 
@@ -18,7 +18,7 @@
 
 | STT | Mảng / Vai trò | Đầu ra mục tiêu của Sprint 1 | Tài liệu Bằng chứng Thực tế (Verified Deliverable) | Mã Task GitHub (`theGonlyK/QLNT`) | Trạng thái Đối chiếu |
 | :---: | :--- | :--- | :--- | :--- | :---: |
-| **1** | **PM (`PM Lead` & `PM Agent`)** | Bản đồ phụ thuộc, tiêu chí chốt task, điều phối Issue & quyết định `QLNT-D001..D014` | • [`01-quan-ly/HO_SO_DIEU_PHOI_SPRINT_1_VA_QUY_MO_HA_TANG.md`](../01-quan-ly/HO_SO_DIEU_PHOI_SPRINT_1_VA_QUY_MO_HA_TANG.md)<br>• [`01-quan-ly/DECISIONS.md`](../01-quan-ly/DECISIONS.md) | `#8`, `#11`, `#20`, `#21`, `#48` (`CLOSED / Done`) | **Đạt 100%** |
+| **1** | **PM (`PM Lead` & `PM Agent`)** | Bản đồ phụ thuộc, tiêu chí chốt task, điều phối Issue & quyết định `QLNT-D001..D014` | • [Hồ sơ điều phối Sprint 1 — lịch sử](lich-su/ho-so-thuc-thi-chi-tiet/HO_SO_DIEU_PHOI_SPRINT_1_VA_QUY_MO_HA_TANG.md)<br>• [`01-quan-ly/DECISIONS.md`](../01-quan-ly/DECISIONS.md) | `#8`, `#11`, `#20`, `#21`, `#48` (`CLOSED / Done`) | **Đạt 100%** |
 | **2** | **Marketing (`Marketing Lead` & `Agent`)** | Khảo sát thị trường Hà Nội, danh mục phần mềm tham khảo & Bộ biểu mẫu hợp đồng/bàn giao/hóa đơn thực tế VN (`#1`) | • [`02-nghiep-vu/NGHIEN_CUU_THI_TRUONG.md`](../02-nghiep-vu/NGHIEN_CUU_THI_TRUONG.md)<br>• [`DANH_MUC_PHAN_MEM_QUAN_LY_NHA_TRO.md`](../../../2.Tai_lieu_tham_khao/3.Tai_lieu_nghiep_vu/DANH_MUC_PHAN_MEM_QUAN_LY_NHA_TRO.md)<br>• [`BO_BIEU_MAU_HOP_DONG_BAN_GIAO_HOA_DON_VN.md`](../../../2.Tai_lieu_tham_khao/3.Tai_lieu_nghiep_vu/BO_BIEU_MAU_HOP_DONG_BAN_GIAO_HOA_DON_VN.md) | `#1`, `#15`, `#31`, `#32`, `#33`, `#44` (`CLOSED / Done`) | **Đạt 100%** |
 | **3** | **BA (`BA Lead` & `BA Agent`)** | Yêu cầu P1, Ma trận truy vết 21 AC, Ma trận so sánh SP, Luồng nghiệp vụ & Đặc tả Single-Page Sổ quản lý ảo F04 (`#2`, `#4`) | • [`02-nghiep-vu/REQUIREMENTS.md`](../02-nghiep-vu/REQUIREMENTS.md) & [`SRS.md`](../02-nghiep-vu/SRS.md)<br>• [`02-nghiep-vu/MA_TRAN_TRUY_VET_P1.md`](../02-nghiep-vu/MA_TRAN_TRUY_VET_P1.md)<br>• [`02-nghiep-vu/DAC_TA_SO_QUAN_LY_AO_SINGLE_PAGE_VA_RENDERER.md`](../02-nghiep-vu/DAC_TA_SO_QUAN_LY_AO_SINGLE_PAGE_VA_RENDERER.md)<br>• [`02-nghiep-vu/MA_TRAN_SO_SANH_SAN_PHAM_QLNT.md`](../02-nghiep-vu/MA_TRAN_SO_SANH_SAN_PHAM_QLNT.md) | `#2`, `#4`, `#12`, `#22`, `#23`, `#24`, `#43`, `#45` (`CLOSED / Done`) | **Đạt 100%** |
 | **4** | **UX (`UX Lead` & `UX Agent`)** | Thiết kế luồng quản lý phòng/khách, thu tiền/báo hỏng & Wireframe Single-Page trên Mobile | • [`02-nghiep-vu/THIET_KE_UX_FLOW_VA_MOBILE_P1.md`](../02-nghiep-vu/THIET_KE_UX_FLOW_VA_MOBILE_P1.md) | `#14`, `#28`, `#29`, `#30` (`CLOSED / Done`) | **Đạt 100%** |

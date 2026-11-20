@@ -3,7 +3,7 @@
 > **Tài liệu Kỹ thuật Chuẩn hóa (Technical Standardization Document)**  
 > **Mã hồ sơ:** `TECH-STD-001`  
 > **Dự án:** Quản lý nhà trọ (QLNT)  
-> **Kế hoạch gốc:** [`PLAN-TECH-001`](../01-quan-ly/KE_HOACH_CHUAN_HOA_KY_THUAT_VA_NHAN_SU.md)  
+> **Hồ sơ lịch sử liên quan:** [`PLAN-TECH-001`](../04-van-hanh/lich-su/ho-so-thuc-thi-chi-tiet/KE_HOACH_CHUAN_HOA_KY_THUAT_VA_NHAN_SU.md)
 > **Người lập:** Kỹ thuật chính dự án (Tech Lead / Mảng B)  
 > **Ngày ban hành:** 2026-11-12  
 > **Trạng thái:** `Đã phê duyệt — Chuẩn bắt buộc áp dụng`
@@ -392,7 +392,7 @@ flowchart LR
 
 | STT | Tài liệu kỹ thuật | Đường dẫn tương đối | Trạng thái đồng bộ |
 |:---:|---|---|---|
-| 1 | Kế hoạch triển khai kỹ thuật & nhân sự | [`../01-quan-ly/KE_HOACH_CHUAN_HOA_KY_THUAT_VA_NHAN_SU.md`](../01-quan-ly/KE_HOACH_CHUAN_HOA_KY_THUAT_VA_NHAN_SU.md) | Nguồn định hướng chuẩn |
+| 1 | Hồ sơ triển khai kỹ thuật & nhân sự lịch sử | [`../04-van-hanh/lich-su/ho-so-thuc-thi-chi-tiet/KE_HOACH_CHUAN_HOA_KY_THUAT_VA_NHAN_SU.md`](../04-van-hanh/lich-su/ho-so-thuc-thi-chi-tiet/KE_HOACH_CHUAN_HOA_KY_THUAT_VA_NHAN_SU.md) | Chỉ dùng để truy vết; nguồn chuẩn là quyết định và hồ sơ kỹ thuật hiện hành |
 | 2 | Hồ sơ kỹ thuật và môi trường | [`TECH_PROFILE.md`](TECH_PROFILE.md) | Đã đồng bộ Hybrid Three.js + DOM Overlay & Tech Stack |
 | 3 | Hồ sơ hạ tầng & Chuẩn vận hành | [`../04-van-hanh/HA_TANG_VA_VAN_HANH_HE_THONG.md`](../04-van-hanh/HA_TANG_VA_VAN_HANH_HE_THONG.md) | Đã bổ sung Outbox Sync & Worker Signed URL |
 | 4 | Nhật ký cải tiến vòng đời | [`../04-van-hanh/IMPROVEMENTS.md`](../04-van-hanh/IMPROVEMENTS.md) | Đã ghi nhận đợt rà soát kỹ thuật 2026-11-12 |

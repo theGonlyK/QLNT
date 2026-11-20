@@ -10,8 +10,8 @@
 > - `3.DOC_AI/quan-tri/RULES_CORE.md` (Quy tắc cốt lõi và thẩm quyền các vai trò)  
 > - `3.DOC_AI/quan-tri/MO_HINH_VAN_HANH.md` (Mô hình 3 mảng A, B, C và các cổng nghiệm thu G1–G3)  
 > - `01-quan-ly/DECISIONS.md` (`QLNT-D001` $\rightarrow$ `QLNT-D014`)  
-> - `01-quan-ly/KE_HOACH_CHUAN_HOA_KY_THUAT_VA_NHAN_SU.md` (Kế hoạch chuẩn hóa kỹ thuật và nhân sự)  
-> - `01-quan-ly/HO_SO_DIEU_PHOI_SPRINT_1_VA_QUY_MO_HA_TANG.md` (Hồ sơ điều phối Sprint 1 và hạ tầng)  
+> - `04-van-hanh/lich-su/ho-so-thuc-thi-chi-tiet/KE_HOACH_CHUAN_HOA_KY_THUAT_VA_NHAN_SU.md` (hồ sơ chuẩn hóa kỹ thuật và nhân sự — lịch sử)
+> - `04-van-hanh/lich-su/ho-so-thuc-thi-chi-tiet/HO_SO_DIEU_PHOI_SPRINT_1_VA_QUY_MO_HA_TANG.md` (hồ sơ điều phối Sprint 1 và hạ tầng — lịch sử)
 
 ---
 
